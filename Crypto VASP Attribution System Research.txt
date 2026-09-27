@@ -1,0 +1,255 @@
+﻿Automated Attribution of Unknown Cryptocurrency Wallets to Nearest Virtual Asset Service Providers (VASPs) through Blockchain Intelligence APIs
+The rapid adoption of Virtual Digital Assets (VDAs) and decentralized blockchain ecosystems has exponentially increased the complexity of global cybercrime investigations. Law Enforcement Agencies (LEAs) routinely confront cryptocurrency wallet addresses tied to cyber frauds, ransomware syndicates, investment scams, darknet marketplaces, and the sophisticated laundering of illicit proceeds. While the inherent transparency of public distributed ledgers provides a theoretical advantage for forensic accounting, the pseudonymity of wallet addresses presents a substantial barrier to generating actionable intelligence.
+Under the existing investigative workflows utilized by Indian LEAs, lawful information disclosure requests are routed through the SAHYOG portal to registered Virtual Asset Service Providers (VASPs) such as centralized cryptocurrency exchanges, custodial wallet providers, and trading platforms. However, these investigations frequently stall when the suspect wallet identified during an inquiry is an unhosted (non-custodial) wallet, or when the receiving VASP is unknown, obscuring the beneficial owner's identity. Because blockchain transactions generally pass through multiple intermediary wallets before reaching centralized exchanges, manually identifying the nearest direct deposit accepting exchange is immensely time-consuming and requires highly specialized technical expertise.
+To overcome these critical bottlenecks, the development of an Automated Blockchain Intelligence & VASP Attribution Engine integrated directly with the SAHYOG portal via APIs is essential. This proposed software-based platform automates the identification of the nearest VASP by tracing blockchain transaction paths, executing multi-heuristic clustering, tracking cross-chain movements, and utilizing Graph Neural Networks (GNNs) for behavioral node classification. The system is designed to generate real-time, investigation-ready reports and provide interactive dashboards for LEAs, thereby reducing investigation time, improving asset freezing efficiency, and strengthening cross-border cybercrime enforcement involving VDAs.
+The SAHYOG Ecosystem and the Cybercrime Landscape
+The Indian Cybercrime Coordination Centre (I4C), established by the Ministry of Home Affairs (MHA) in New Delhi, serves as the nodal agency for addressing cybercrime in a comprehensive and coordinated manner1. Within this framework, the Citizen Financial Cyber Fraud Reporting and Management System (CFCFRMS) was launched in 2021 to facilitate the immediate reporting of financial frauds and prevent the siphoning of funds by fraudsters3. When cybercriminals utilize VDAs, LEAs rely heavily on the SAHYOG portal, a centralized digital interface designed to expedite the dispatch of lawful notices to IT intermediaries, including digital asset exchanges. These requests are executed under statutory provisions such as Section 94 of the Bharatiya Nagarik Suraksha Sanhita (BNSS) and Section 79(3)(b) of the Information Technology Act, 2000, allowing authorities to seek digital evidence, user data, and freeze assets3.
+Global cryptocurrency exchanges are increasingly onboarding onto the SAHYOG portal to streamline communication with Indian LEAs and reduce procedural friction4. However, the efficacy of the SAHYOG portal is heavily dependent on identifying exactly which VASP to serve with a notice. The Central Government supplements the efforts of States and Union Territories by providing technological support and capacity-building assistance through initiatives like the CyTrain portal and the Cyber Commando programme, which train personnel in critical aspects of cyber forensics3. Despite these advancements, the manual tracing of funds through obfuscation layers—such as mixers, bridges, and decentralized exchanges (DEXs)—requires significant time, which criminals exploit to liquidate assets before a freezing order can be issued.
+An automated attribution engine solves this by continuously traversing the transaction graph from a reported suspect wallet, analyzing the flow of funds, and identifying the nearest VASP where the funds ultimately rest. By automatically tagging the destination cluster with confidence scores and assisting investigators in routing the disclosure request to the correct VASP via SAHYOG, the system drastically reduces the latency between crime reporting and asset freezing.
+High-Throughput Scalable Architecture
+Developing a scalable architecture capable of ingesting, parsing, and analyzing large-volume multi-chain transaction data in real-time requires a hybrid approach combining in-memory graph processing with persistent data lakes. The attribution engine operates on an event-driven microservices architecture designed to map transactions across Bitcoin, Ethereum, Tron, BNB Chain, Solana, Polygon, and other major chains.
+Real-Time Graph Ingestion and Streaming
+To manage high-throughput workloads, the architecture utilizes Apache Kafka or Apache Pulsar for real-time data streaming5. Kafka acts as the primary message broker, capturing block data, transaction receipts, and internal contract executions from archive nodes, and pushing them to a graph database optimized for real-time traversal6.
+In-memory property graph databases, such as Memgraph, are specifically designed to execute sub-millisecond graph queries on streaming data7. Unlike traditional disk-based relational databases that struggle with the expensive JOIN operations required for multi-hop relationships, in-memory graph engines natively support continuous data streams and execute pathfinding algorithms with minimal latency8. Memgraph utilizes lock-free, concurrent skiplist structures for storing nodes and relationships, which minimizes coordination overhead between threads during high-velocity data ingestion5. Furthermore, setting delta properties appropriately allows the engine to only create records for properties that have changed, optimizing write operations during continuous streaming5.
+Persistent Analytical Storage and Querying
+For persistent, historical data storage—essential for training machine learning models and querying years of blockchain history—the architecture leverages column-oriented database management systems like ClickHouse. ClickHouse provides extreme storage efficiency and vectorized query execution capabilities for analytical queries (OLAP)10. Vectorized execution dispatches operations on arrays (vectors) of data rather than individual values, drastically lowering the computational cost of analyzing millions of historical transactions10.
+Furthermore, ClickHouse supports experimental transactional (ACID) guarantees for asynchronous bulk inserts, ensuring that if an exception occurs during the ingestion of massive blockchain datasets, the transaction is rolled back, preventing data corruption11. This hybrid setup ensures that exhaustive historical traces of smart contract events can be queried via ClickHouse without overloading the real-time graph engine running on Memgraph.
+SAHYOG API Integration and LEA Dashboards
+The intelligence engine connects to the SAHYOG portal through secure RESTful APIs and GraphQL endpoints. When a cybercrime complaint is registered on the National Cybercrime Reporting Portal (NCRP) and escalated via SAHYOG, the suspect's wallet address is programmatically submitted to the intelligence engine2.
+The system provides a comprehensive dashboard for LEAs featuring case-based analytics and real-time generation of investigative intelligence. The API returns an investigation-ready JSON payload that includes:
+* The identified VASP, custodial service, or exchange cluster.
+* A confidence score derived from heuristic validation (e.g., 95% certainty based on deposit address behavior).
+* Visualizations of the shortest transaction path and cross-chain fund movements.
+* Risk scoring and automated alerts identifying laundering typologies (e.g., darknet affiliation, terrorism financing, ransomware).
+Architectural Component
+	Primary Function
+	Underlying Technology
+	Integration Point
+	Stream Processing
+	Real-time ingestion of blockchain blocks and transaction receipts.
+	Apache Kafka, Apache Pulsar
+	RPC Endpoints, Archive Nodes
+	Graph Database
+	Low-latency pathfinding, shortest path computation, and real-time clustering.
+	Memgraph (In-memory, C++)
+	Kafka Connect, Python Microservices
+	Data Lake (OLAP)
+	Vectorized execution of complex analytical queries on historical blockchain data.
+	ClickHouse (Column-oriented)
+	Batch processors, ML Pipelines
+	LEA Interface
+	Case-based analytics, visualization of fund movement, routing freezing requests.
+	React/Next.js, FastAPI
+	SAHYOG Portal API
+	Multi-Heuristic Address Clustering for VASP Attribution
+A single real-world entity, such as a centralized cryptocurrency exchange or mixer, often controls millions of distinct blockchain addresses. Clustering algorithms aim to group these pseudonymous addresses into a single logical entity (or "wallet"), which can then be deanonymized using attribution tags (e.g., open-source intelligence, darknet forum scraping, or known exchange hot wallets)13. The clustering heuristics deployed by the engine depend entirely on the accounting model of the underlying blockchain network.
+UTXO Chains and the Common-Input-Ownership Heuristic
+Blockchains like Bitcoin, Litecoin, and Cardano utilize the Unspent Transaction Output (UTXO) or Extended UTXO (EUTXO) model16. In this model, a user's wallet balance is not stored as a single variable but is instead the sum of discrete, unspent outputs from prior transactions. When initiating a transfer, the wallet software automatically selects multiple UTXOs to cover the required amount, combining them as inputs into a new transaction.
+The most powerful clustering mechanism for UTXO chains is the Common-Input-Ownership Heuristic (CIOH)13. The CIOH posits that if a transaction features multiple input addresses, all those addresses are controlled by the same cryptographic private key, and therefore, by the same real-world entity19. Applying the CIOH allows the engine to collapse thousands of seemingly unrelated addresses into massive entity clusters, frequently revealing the internal structure of VASP hot wallets. For example, research utilizing the CIOH has successfully mapped the payment infrastructure of dozens of ransomware families, distinguishing victim payment addresses from the attackers' central consolidation wallets21.
+However, the CIOH is highly susceptible to heuristic contamination caused by privacy-enhancing protocols like CoinJoin19. CoinJoin aggregates inputs from multiple distinct, unrelated users into a single, collaborative transaction, deliberately breaking the foundational assumption of common ownership20. If an attribution engine blindly applies the CIOH to a CoinJoin transaction, it will erroneously cluster innocent users with illicit actors, leading to massive false-positive clusters19. The intelligence engine must therefore utilize transaction structure analysis (e.g., detecting uniform output amounts, specific fee structures, and known mixer signatures) to isolate and filter out CoinJoin transactions prior to executing the clustering algorithm25.
+Account-Based Chains and the Deposit Address Heuristic
+Unlike Bitcoin, networks such as Ethereum, Binance Smart Chain (BSC), Polygon, and Tron operate on an account-based model, where balances are maintained at specific addresses, similar to traditional bank accounts16. Because a standard Ethereum transaction only has one sender and one receiver, the CIOH is mathematically inapplicable.
+To attribute entities on account-based chains, the engine utilizes the Deposit Address Heuristic16. Centralized VASPs assign unique, temporary deposit addresses to each user. When a user sends funds to this deposit address, the VASP's backend infrastructure programmatically sweeps the funds from the deposit address into a centralized corporate hot wallet to maintain liquidity and secure the assets.
+The intelligence engine monitors the blockchain for this specific "sweep" pattern. By analyzing the transaction graph, the algorithm identifies a central node (the hot wallet) receiving highly automated, periodic transfers from thousands of peripheral nodes (the deposit addresses), often with the transaction fees subsidized by the central node16. This allows the engine to attribute all those peripheral deposit addresses to the specific VASP operating the hot wallet13.
+Additional heuristics for account chains include the Airdrop Heuristic, which analyzes multiple participations in token airdrops to find sybil attackers controlling multiple externally owned accounts (EOAs), and the Token Transfer Authorization heuristic16. By combining these models into a comprehensive framework, similar to the BACH (Bitcoin Address Clustering based on multiple Heuristics) tool, the engine improves the degree of address aggregation and recall rates28.
+Clustering Heuristic
+	Applicable Blockchains
+	Mechanism
+	Vulnerabilities & Limitations
+	Common-Input-Ownership (CIOH)
+	Bitcoin, Litecoin, Cardano (EUTXO)
+	Groups addresses used as inputs in the same transaction under single entity control.
+	Highly susceptible to massive false positives via CoinJoin and collaborative transactions.
+	Deposit Address / Sweep
+	Ethereum, Tron, BSC, Polygon
+	Identifies automated fund sweeps from peripheral user addresses to central hot wallets.
+	Can be obfuscated by smart contract-based forwarding and decentralized custody models.
+	Change Address Inference
+	Bitcoin, UTXO models
+	Identifies the return of unspent funds to a newly generated, entity-controlled address.
+	Round-number outputs and randomized wallet software logic can cause identification errors.
+	Pathfinding and Graph Analytics for Trace Automation
+Once addresses are clustered into logical entities and mapped against known attribution tags, the intelligence engine must trace the flow of illicit funds from a suspect's unhosted wallet to a known VASP cluster. This requires advanced graph analytics, community detection, and traversal algorithms.
+Shortest Path Algorithms and Peeling Chains
+To locate the nearest direct deposit accepting exchange, the engine models the blockchain as a highly interconnected directed graph where nodes represent entities (clusters) and edges represent transaction values. The engine executes variations of the Single-Source Shortest Path (SSSP) algorithm to find the most direct route of funds from the suspect to the VASP31.
+Using graph query languages like Cypher, native to Neo4j and Memgraph, the engine can execute bounded depth-first or breadth-first searches. A standard Cypher query to trace funds up to a specified hop limit relies on the shortestPath function:
+
+
+
+
+
+
+Cypher
+MATCH (source {id: $suspect_wallet}), (target {id: $vasp_cluster})
+MATCH path = shortestPath((source)-[*1..10]->(target))
+RETURN path
+
+34
+While shortest path algorithms are computationally efficient, they are frequently countered by cybercriminals utilizing "peel chains." A peel chain is a laundering typology where a large sum of illicit cryptocurrency is repeatedly transferred through a series of new addresses, "peeling" off small amounts at each hop to deposit into exchanges, while the bulk of the funds moves to the next address. This artificially inflates the hop count, evading naive search depth limits13.
+To counter this, the engine must implement weighted pathfinding (e.g., Dijkstra's algorithm) where edges are weighted not just by distance, but by temporal proximity and value consistency9. This ensures that the trace follows the primary flow of volume rather than being distracted by irrelevant micro-transactions or gas fee payments.
+Community Detection: Louvain and Leiden Algorithms
+To independently discover new VASP clusters, unlicensed exchanges, or darknet marketplaces without relying exclusively on external attribution tags, the engine employs community detection algorithms36. The most prominent of these is the Louvain method37.
+The Louvain method is a greedy optimization algorithm intended to extract non-overlapping communities from large networks by maximizing a metric known as modularity (  )40. Modularity measures the density of edges inside a community compared to the expected density of edges connecting nodes outside the community41. The algorithm operates in two phases: first, it assigns nodes to communities to maximize local modularity; second, it aggregates these communities into "super-nodes" and repeats the process hierarchically40.
+The modularity function optimized by the algorithm is mathematically defined as:
+  
+
+Where    is the edge weight between nodes    and   ;    and    are the sum of weights of edges attached to nodes    and   ;    is the total edge weight in the network; and    equals 1 if nodes belong to the same community, and 0 otherwise40.
+By applying the Louvain method, the SAHYOG intelligence engine can automatically map the topology of the cryptocurrency ecosystem, grouping thousands of unlabeled wallets into distinct economic communities37. If a single address within that community is subsequently identified via a law enforcement subpoena, the entire community can be attributed to that specific VASP.
+However, community detection methods relying on modularity maximization suffer from a well-documented "resolution limit," which prevents the identification of small communities embedded within extremely large networks38. To address this, the engine may fall back on the Leiden algorithm, an evolution of Louvain that guarantees communities are well-connected and addresses the resolution limit by introducing a penalty parameter during the aggregation phase44.
+Temporal Motifs
+In addition to broad community detection, the engine leverages temporal motifs to identify specific laundering typologies. A temporal motif is a specific sequence of transactions occurring within a defined time window (e.g., Node A sends to Node B, and within five minutes, Node B sends to Node C). Unlike static graph metrics, analyzing the frequency of temporal motifs allows the engine to flag wallets acting as "middlemen" in illicit trades, or identify the automated behavior of mixers and tumblers45.
+Cross-Chain Transaction Mapping and Smart Contract Tracing
+Modern cybercrime rarely occurs on a single, isolated blockchain. Threat actors utilize decentralized finance (DeFi) protocols to swap assets, bridge funds across different chains, and execute complex smart contract logic to obscure the money trail46.
+Tracking Interoperability via Cross-Chain Bridges
+To evade single-chain tracing tools, criminals utilize cross-chain bridges to move value from highly scrutinized chains (like Ethereum) to lower-fee networks (like Tron or Polygon) or privacy-centric networks. Since these transactions do not exist on a single ledger, they present a significant challenge characterized as "fragmented cross-chain observability"46.
+Bridges generally operate using one of three settlement mechanisms:
+1. Lock-and-Mint: Assets are locked in a smart contract on the source chain, and a wrapped equivalent is minted on the target chain.
+2. Burn-and-Mint: Assets are burned on the source chain and minted on the destination chain.
+3. Liquidity Pools: Pre-funded pools on both chains allow a user to deposit native assets on one side and receive native assets from the pool on the other side46.
+Tracking funds across these protocols requires the intelligence engine to deploy a Cross-chain Behavior Heterogeneous Graph (xBHG) framework46. This involves parsing event logs emitted by bridge smart contracts on the source chain (e.g., a user initiating a transfer on Ethereum by sending assets to the Polygon PoS Bridge's Null Contract, effectively burning them)48. The engine monitors the off-chain relay components or validators (checkpointing) that attest to this event, and matches it with corresponding Withdraw or Mint events on the destination chain46. By correlating transaction timestamps, values, and token identifiers, the engine achieves match rates of over 99% for certain bridges, effectively stitching fragmented ledgers into a unified flow visualization49.
+This capability extends to instant cross-chain swap services and aggregators. Aggregators do not run their own exchanges; they split deposits across multiple bridges or swap services to secure the best rate, meaning one deposit may correspond to multiple disparate withdrawals on the target chain48. The engine's algorithms match these fragmented requests internally, ensuring the trail of illicit funds is not lost during a cross-chain hop.
+EVM Tracing and Internal Transactions
+On Ethereum Virtual Machine (EVM) compatible chains, value transfers do not always occur through standard, top-level transactions initiated by Externally Owned Accounts (EOAs). When a smart contract executes complex logic, it can trigger "internal transactions" (message calls) to move funds on behalf of the user. Standard JSON-RPC calls (like eth_getTransactionReceipt) provide a status code indicating success or failure, but they do not log these internal movements, creating a massive blind spot for investigators attempting to follow the money51.
+To achieve exhaustive tracing of smart contract interactions, the intelligence engine must utilize specialized EVM tracing APIs, specifically debug_traceTransaction (supported by Geth) or trace_transaction (supported by Erigon and Parity)53. These trace endpoints must be queried against specialized archive nodes, as they execute the transaction in a diagnostic mode, returning a complete opcode-by-opcode execution record including stack, memory, and state changes55.
+By parsing the trace for specific execution opcodes such as CALL, CALLCODE, STATICCALL, and DELEGATECALL, the engine reconstructs the internal flow of native assets (like ETH) and identifies the true beneficiary of a complex smart contract execution52. This deep execution tracing is absolutely critical when tracing funds through decentralized mixers (e.g., Tornado Cash) or analyzing exploits where flash loans and multiple nested contract calls obscure the final destination of stolen funds25.
+Non-EVM Tracing: Solana and High-Throughput Chains
+To provide comprehensive coverage, the engine must support non-EVM chains such as Solana, which utilizes a radically different account model and transaction structure. On Solana, smart contracts (programs) are stateless, and data is stored in separate data accounts61. Token transfers are executed via the Solana Program Library (SPL) Token Program, meaning standard native transfer tracking tools are useless61.
+The intelligence engine parses Solana transactions by extracting the specific instruction data, decoding the base58-encoded payloads, and mapping the input accounts to identify the source wallet, destination wallet, and the specific mint (the token type being transferred)62. Because Solana processes thousands of transactions per second, the engine relies on highly optimized Rust-based toolkits (e.g., solders) or specialized Python clients (solana-py, Anchor-py) integrated with the backend graph to ingest state changes without latency61.
+Graph Neural Networks for Behavioral Node Classification
+While deterministic heuristics (like CIOH) and pathfinding algorithms are foundational to the system, they fall short when malicious actors actively utilize sophisticated anti-forensic techniques, or when attempting to classify completely new, unknown addresses. To enhance automated VASP attribution and risk scoring, the intelligence engine incorporates Deep Learning, specifically Graph Neural Networks (GNNs), to classify unknown nodes based purely on their behavioral topologies66.
+Inductive Learning with GraphSAGE
+Traditional graph embedding techniques (like DeepWalk or Node2Vec) are inherently transductive—they require the entire graph structure to be present during the training phase and cannot easily generate embeddings for newly observed addresses without complete retraining69. Because blockchain ledgers are highly dynamic, with hundreds of thousands of new addresses generated daily, transductive models are entirely unsuitable for a real-time LEA intelligence engine.
+Therefore, the system utilizes GraphSAGE (Graph Sample and Aggregate), a highly scalable inductive framework69. GraphSAGE generates embeddings for unseen nodes by sampling and aggregating features from a node's local neighborhood68. Rather than memorizing a fixed embedding matrix for every node, the model learns a generalized aggregation function69.
+For a suspect cryptocurrency wallet reported via SAHYOG, GraphSAGE aggregates local topological features such as transaction frequency, volume, average time between deposits and withdrawals, and the structural motifs of its immediate neighbors70. The aggregation step at layer    is mathematically defined as:
+  
+
+  
+
+Where    is the representation of node    at step   ,    is the neighborhood of   , and    is a trainable weight matrix68.
+Other GNN architectures evaluated for the engine include Graph Convolutional Networks (GCN) and Graph Attention Networks (GAT)68. While GAT utilizes an attention mechanism to learn specific weights for different neighbors (preventing irrelevant micro-transactions from skewing the classification), GraphSAGE combined with Context-Surrounding GNN (CS-GNN) smoothness metrics generally provides the most robust inductive performance for massive transactional networks68.
+Training on Benchmark Datasets and Adversarial Resilience
+To ensure the GNNs can accurately identify illicit typologies, they are trained on expansive, labeled benchmark datasets. The most prominent of these is the Elliptic Dataset. While Elliptic1 contained 204,000 node transactions, the newly released Elliptic2 dataset represents a massive leap in scale, containing a background graph of 49 million node clusters and 196 million edge transactions, alongside 122,000 labeled subgraphs of known illicit activity74.
+By training on datasets of this magnitude, the engine learns the specific topological "shapes" of money laundering, peel chains, and ransomware operations74. When a new unhosted wallet is analyzed, the GNN infers its classification. If the node exhibits the behavioral fingerprint of a corporate custodial service or hot wallet, it is tagged as a probable VASP with a high confidence score, automatically directing SAHYOG investigators to issue a disclosure request to that specific entity.
+However, GNNs deployed in adversarial environments face significant security vulnerabilities. Research indicates that GNNs are susceptible to targeted black-box evasion attacks, such as TANDIS (Targeted Attack via Neighborhood Distortion)77. In these attacks, cybercriminals deliberately distort the neighborhood of a suspect node by executing a budgeted number of edge additions or deletions (e.g., sending randomized micro-transactions to heavily connected legitimate services)77. This distorts the neighborhood aggregation process, tricking the GNN into classifying a money laundering wallet as a legitimate VASP. The intelligence engine must actively counter these adversarial perturbations by incorporating robust, edge-preserving bilateral filters and anomaly detection algorithms during the feature extraction phase78.
+GNN Architecture
+	Primary Mechanism
+	Advantages for Blockchain Analysis
+	Limitations
+	GraphSAGE
+	Inductive sampling and aggregation of local node neighborhoods.
+	Excellent for rapidly evolving graphs; scales well; generalizes to unseen nodes.
+	Uniform sampling can be easily poisoned by adversarial neighborhood distortion (e.g., TANDIS).
+	GAT (Graph Attention Networks)
+	Learns dynamic attention weights for different neighboring nodes.
+	Can ignore irrelevant micro-transactions; highly adaptable to varying graph densities.
+	Computationally expensive; struggles with extremely deep architectures due to over-smoothing.
+	GCN (Graph Convolutional Networks)
+	Transductive low-pass filtering based on structural proximity.
+	Strong performance on static graphs with highly homophilous labels.
+	Inherently transductive; cannot classify new wallet addresses without complete model retraining.
+	LLM-Assisted Attribution Tagging
+To bridge the gap between mathematically identified clusters and real-world VASP identities, the system incorporates Large Language Models (LLMs) to automate the linkage of open-source intelligence (OSINT). By continuously crawling darknet forums, sanction lists (such as OFAC), and regulatory filings, the engine collects unstructured text mentioning cryptocurrency addresses15.
+LLMs extract entity names, service categories (e.g., "high-risk exchange", "DeFi bridge"), and blockchain addresses, mapping them to a structured knowledge graph strictly aligned with the INTERPOL Dark Web and Virtual Assets Taxonomy (DWVA)14. When the GraphSAGE model or Louvain algorithm identifies an economic cluster, the LLM-driven knowledge graph immediately matches the topological data with the real-world name of the VASP operating that cluster, enriching the final SAHYOG report.
+Legal, Evidentiary, and Compliance Frameworks
+The ultimate objective of the SAHYOG-integrated attribution engine is not merely to generate operational intelligence, but to produce court-admissible evidence that withstands rigorous judicial scrutiny, facilitates the lawful freezing of assets, and supports successful criminal prosecutions.
+Admissibility of Blockchain Forensics in Court
+Courts globally, including in India, require that digital evidence satisfies strict authenticity and reliability standards79. In criminal proceedings regarding cryptocurrency fraud, defense attorneys routinely challenge the reliability of blockchain clustering heuristics. The primary legal contention is that a public blockchain address is pseudonymous; demonstrating that funds moved to a specific address does not inherently prove beneficial ownership or practical control over those funds81.
+For an investigative report generated by the intelligence engine to be admissible as evidence (e.g., under the Daubert standard in the United States, or Section 65B of the Indian Evidence Act), the methodology utilized by the software must be highly transparent and reproducible13. The engine must operate as a "glass box" rather than a "black box," providing a clear, verifiable chain of custody for its data processing83. Every clustering decision made by the CIOH or Deposit Address heuristic must be explicitly documented in the generated report, displaying the exact transaction hashes, block heights, and algorithmic assumptions utilized to link the suspect wallet to the VASP13.
+Recent jurisprudence establishes a firm precedent that digital assets cannot shield criminals. For example, the Orissa High Court's ruling in Umesh Kumar Ramani v. State of Odisha affirmed that cryptocurrency cannot be used as a shield against criminal liability when the trading of such assets is employed as a cloak for fraudulent conduct and systematic inducement84. Similarly, in cases like the PT Asabri corruption scandal in Indonesia, courts have recognized that laundering proceeds through crypto assets constitutes a follow-up crime (money laundering) regardless of the asset class85. Courts increasingly accept that while the underlying blockchain technology is decentralized, the entities operating at the endpoints (the VASPs) are subject to standard financial regulations and attribution logic85.
+Establishing Beneficial Ownership via VASP Disclosure
+When the intelligence engine successfully traces stolen funds to a specific VASP cluster, the subsequent SAHYOG request compels the VASP to disclose the KYC (Know Your Customer) details of the account holder associated with that specific deposit address4.
+However, VASP attribution alone is sometimes insufficient if the suspect utilizes unhosted hardware wallets (e.g., Ledger, Trezor) to store the funds indefinitely. In such scenarios, law enforcement must bridge the gap between the blockchain address and the physical suspect. This is achieved through physical digital forensics—extracting crypto applications, screenshots of seed phrases, or saved private keys from seized smartphones and laptops to definitively prove that the accused controlled the unhosted wallet identified by the engine81. The intelligence engine's reports serve as the crucial intermediate link, establishing the probable cause required for judges to issue search warrants for these physical devices or to compel offshore VASP records.
+The FATF Travel Rule and the "Sunrise Problem"
+The intelligence engine's capabilities are intrinsically linked to global Anti-Money Laundering (AML) standards, specifically the Financial Action Task Force (FATF) Recommendation 16, commonly known as the Travel Rule26. The Travel Rule mandates that VASPs collect, verify, and transmit identifying originator and beneficiary information (often using standardized formats like IVMS101) alongside virtual asset transfers13.
+A significant operational challenge for LEAs utilizing the SAHYOG portal is the "Sunrise Problem"—the staggered and uneven global implementation of the Travel Rule across different jurisdictions, which leaves massive regulatory gaps, particularly concerning offshore, non-compliant VASPs13. When Indian victims' funds flow into non-compliant offshore jurisdictions, SAHYOG information disclosure requests are often ignored or delayed indefinitely by the receiving exchange.
+By integrating continuous Know Your Transaction (KYT) monitoring, the intelligence engine evaluates counterparty risk dynamically13. If the engine traces funds to an offshore VASP that routinely refuses SAHYOG cooperation, it can flag the entire VASP cluster as high-risk. Domestic, compliant VASPs utilizing the engine's APIs can then proactively block transactions originating from or destined for that non-compliant entity, effectively quarantining the illicit funds within the broader financial ecosystem and preventing further laundering13.
+Conclusion
+The integration of an Automated Blockchain Intelligence & VASP Attribution Engine into the SAHYOG ecosystem represents a foundational paradigm shift in global cybercrime investigation capabilities. By combining high-throughput graph ingestion architectures utilizing Kafka and Memgraph with deterministic clustering heuristics (CIOH, Deposit Address) and advanced inductive machine learning (GraphSAGE), the system systematically dismantles the pseudonymity that cybercriminals rely upon.
+Crucially, the engine directly addresses the highly fragmented reality of modern Web3 infrastructure by traversing EVM opcodes, Solana instruction data, and cross-chain bridges, ensuring that sophisticated laundering techniques—such as liquidity pool swaps, peel chains, and smart contract obfuscation—do not break the investigative chain. By delivering real-time, glass-box attribution reports with highly reproducible methodologies, the engine equips Law Enforcement Agencies with court-admissible intelligence, accelerating the issuance of lawful disclosure requests and drastically improving the efficiency of asset recovery in the virtual digital asset domain.
+Works cited
+1. Indian Cybercrime Coordination Centre - I4C - National Portal of India, https://www.india.gov.in/services/details/indian-cybercrime-coordination-centre-i4c
+2. Indian Cyber Crime Coordination Centre I4c Mha 01 | MYBharat, https://mybharat.gov.in/Gov/Department/indian-cyber-crime-coordination-centre-i4c-mha-01
+3. cyber fraudsters emptying bank accounts by sending fake e-challans, https://www.pib.gov.in/PressReleasePage.aspx?PRID=2298330®=48&lang=1
+4. Bitget Joins India's Sahyog Cybercrime Portal, https://www.bitget.com/blog/articles/bitget-sahyog-india-cybercrime-cooperation
+5. Memgraph in high-throughput workloads, https://memgraph.com/docs/deployment/workloads/memgraph-in-high-throughput-workloads
+6. Integrating Confluent's Kafka Platform with Memgraph for Efficient, https://memgraph.com/blog/integrating-confluents-kafka-platform-with-memgraph
+7. Memgraph High-Speed Graph Queries | simplyblock, https://simplyblock.io/glossary/what-is-memgraph/
+8. Memgraph vs Neo4j: Graph Database Comparison - PuppyGraph, https://www.puppygraph.com/blog/memgraph-vs-neo4j
+9. Understanding Graph Databases: A Comprehensive Tutorial and, https://www.researchgate.net/publication/385899759_Understanding_Graph_Databases_A_Comprehensive_Tutorial_and_Survey
+10. Architecture Overview - ClickHouse Documentation, https://clickhouse.com/docs/resources/develop-contribute/introduction/architecture
+11. Transactional (ACID) support - ClickHouse Documentation, https://clickhouse.com/docs/concepts/features/operations/insert/transactions
+12. Cyber Crime Portal, https://cybercrime.gov.in/
+13. Platform — one backbone for every compliance job | Reserve Trace, https://reservetrace.com/platform
+14. arXiv:2502.10453v1 [cs.CR] 12 Feb 2025, https://arxiv.org/pdf/2502.10453
+15. Linking Cryptoasset Attribution Tags to Knowledge Graph Entities, https://arxiv.org/html/2502.10453v1
+16. Address clustering heuristics for Ethereum, https://www.ifca.ai/fc20/preproceedings/31.pdf
+17. Heuristic-Based Address Clustering in Cardano Blockchain - arXiv, https://arxiv.org/html/2503.09327v1
+18. Assessing the Efficacy of Heuristic-Based Address Clustering ... - arXiv, https://arxiv.org/pdf/2403.00523
+19. How Reliable Is the Multi-Input Heuristic for Bitcoin Address ... - arXiv, https://arxiv.org/html/2607.07414v1
+20. FATF Travel Rule's Technical Challenges and Solution Taxonomy, https://takeiyuto.github.io/assets/fatf.pdf
+21. Ransomware Payments in the Bitcoin Ecosystem - ResearchGate, https://www.researchgate.net/publication/324472186_Ransomware_Payments_in_the_Bitcoin_Ecosystem
+22. Blockchain Attacks and Defenses: A Layered and Cross-Domain, https://arxiv.org/html/2607.06593v1
+23. Evasion Under Blockchain Sanctions - arXiv, https://arxiv.org/html/2507.11721v1
+24. Bitcoin and Cryptocurrency Technologies: A Comprehensive, https://dokumen.pub/bitcoin-and-cryptocurrency-technologies-a-comprehensive-introduction-converted-from-original-azw3-0691171696-9780691171692.html
+25. Correlating Account on Ethereum Mixing Service via Domain ... - arXiv, https://arxiv.org/pdf/2505.09892
+26. Resources — What is KYT, glossary & FAQ | Reserve Trace, https://reservetrace.com/resources
+27. Introducing Our Advanced Clustering Algorithms and Heuristics for, https://blog.merklescience.com/general/transforming-blockchain-security-introducing-our-advanced-clustering-algorithms-and-heuristics-for-bitcoin-and-smart-contract-chains-such-as-ethereum-and-tron
+28. BACH: A Tool for Analyzing Blockchain Transactions Using Address, https://www.mdpi.com/2078-2489/15/10/589
+29. Bitcoin Address Clustering Method Based on Multiple Heuristic, https://www.semanticscholar.org/paper/Bitcoin-Address-Clustering-Method-Based-on-Multiple-He-He/9e3a12a1bcb8d049145b4ae1d231a96fa1636e64
+30. (PDF) Bitcoin address clustering method based on multiple heuristic, https://www.researchgate.net/publication/360974255_Bitcoin_address_clustering_method_based_on_multiple_heuristic_conditions
+31. Single-source shortest-path algorithms - Neptune Analytics, https://docs.aws.amazon.com/neptune-analytics/latest/userguide/sssp-algorithms.html
+32. Shortest Path Algorithm Tutorial with Problems - GeeksforGeeks, https://www.geeksforgeeks.org/dsa/shortest-path-algorithms-a-complete-guide/
+33. A Faster Shortest Path Algorithm - Vals AI, https://www.vals.ai/blogs/faster-shortest-path-algorithm
+34. Tools Resources - DZone, https://dzone.com/tools
+35. Building a Production-Grade Knowledge Graph System - Medium, https://medium.com/@brian-curry-research/building-a-production-grade-knowledge-graph-system-a-complete-guide-36434d85b987
+36. Topological Analysis of Mixer Activities in the Bitcoin Network - arXiv, https://arxiv.org/pdf/2504.11924
+37. Community Detection in Cryptocurrencies - arXiv, https://arxiv.org/pdf/2108.09763
+38. Fast Louvain Algorithm for Community Detection in Shared Memory, https://arxiv.org/html/2312.04876v4
+39. Graph-Based Clustering Algorithms: Modularity-Based Algorithms [P1], https://northernprotector.medium.com/graph-based-clustering-algorithms-modularity-based-algorithms-p1-louvain-algorithm-946b28f18982
+40. Louvain method - Wikipedia, https://en.wikipedia.org/wiki/Louvain_method
+41. pdf - arXiv, https://arxiv.org/pdf/2311.06047
+42. Modularity maximization and community detection in complex ... - arXiv, https://arxiv.org/html/2410.07744v2
+43. Louvain - Neo4j Graph Data Science, https://neo4j.com/docs/graph-data-science/current/algorithms/louvain/
+44. Leiden algorithm - Wikipedia, https://en.wikipedia.org/wiki/Leiden_algorithm
+45. arXiv:2402.09272v2 [cs.SI] 4 Oct 2024, https://arxiv.org/pdf/2402.09272
+46. Risk-Aware Graph Modeling for Cross-Chain Bridge Attack Detection, https://arxiv.org/html/2508.20517v2
+47. (PDF) A Survey of Transaction Tracing Techniques for Blockchain, https://www.researchgate.net/publication/396459735_A_Survey_of_Transaction_Tracing_Techniques_for_Blockchain_Systems
+48. SoK: Cross-Chain Transaction Identification and Matching - arXiv, https://arxiv.org/pdf/2608.17532
+49. Tracing Cross-chain Transactions between EVM-based Blockchains, https://arxiv.org/pdf/2504.15449
+50. Cross-Chain Tracing in Crypto: How It Works and Why It Matters, https://www.trmlabs.com/glossary/cross-chain-tracing
+51. Automated Security Assessment and Improvement of Ethereum Smart, https://mediatum.ub.tum.de/doc/1641114/document.pdf
+52. What are EVM Traces? | Alchemy Docs, https://www.alchemy.com/docs/reference/what-are-evm-traces
+53. Developing a Data Lake for Blockchain Data - truetech, https://truetech.dev/blockchain-development/services/blockchain-infrastructure/blockchain-data-lake-development.html
+54. ApeWorX/evm-trace: Ethereum Virtual Machine transaction tracing tool, https://github.com/ApeWorX/evm-trace
+55. Debug and trace transactions with Erigon and Geth - GitHub, https://github.com/chainstacklabs/debug-trace-transactions-erigon
+56. Support the `debug_traceCall` API · Issue #5778 · tronprotocol/java, https://github.com/tronprotocol/java-tron/issues/5778
+57. Tracing Ethereum Transactions: How to Read and Understand EVM, https://medium.com/@andrey_obruchkov/tracing-ethereum-transactions-how-to-read-and-understand-evm-execution-step-by-step-b042a3356062
+58. Transaction Tracing - Building Secure Contracts, https://secure-contracts.com/learn_evm/tracing.html
+59. How to listen to Transfers events/logs of ETH (native token), https://stackoverflow.com/questions/74561210/how-to-listen-to-transfers-events-logs-of-eth-native-token
+60. debug_traceTransaction support · Issue #123 · INFURA/infura - GitHub, https://github.com/INFURA/infura/issues/123
+61. Python SDK for Solana, https://solana.com/docs/clients/community/python
+62. decodeTransferInstruction | @solana/spl-token, https://solana-labs.github.io/solana-program-library/token/js/functions/decodeTransferInstruction.html
+63. GitHub - Immutal0/solana-transaction-parser: Parse the Solana, https://github.com/Immutal0/solana-transaction-parser
+64. How to Parse Solana Transactions Efficiently - Baransel Arslan, https://baransel.dev/post/parse-solana-transactions-efficiently/
+65. Solana spl token transfer python - Stack Overflow, https://stackoverflow.com/questions/70923875/solana-spl-token-transfer-python
+66. arXiv:2104.06559v1 [cs.SI] 14 Apr 2021, https://arxiv.org/pdf/2104.06559
+67. (PDF) Blockchain address classification using graph neural, https://www.researchgate.net/publication/396870390_Blockchain_address_classification_using_graph_neural_networks_for_enhanced_security_and_analytics
+68. arXiv:2206.13170v1 [cs.LG] 27 Jun 2022, https://arxiv.org/pdf/2206.13170
+69. [1706.02216] Inductive Representation Learning on Large Graphs, https://arxiv.org/abs/1706.02216
+70. Representation Learning on Large Non-Bipartite Transaction ... - arXiv, https://arxiv.org/abs/2509.12255
+71. arXiv:2010.11536v2 [cs.SI] 14 Sep 2021, https://arxiv.org/pdf/2010.11536
+72. E2EG: End-to-End Node Classification Using Graph Topology and, https://arxiv.org/pdf/2208.04609
+73. Feature-Enhanced Graph Neural Networks for Classification ... - arXiv, https://arxiv.org/pdf/2512.18524
+74. The Shape of Money Laundering: Subgraph Representation ... - arXiv, https://arxiv.org/pdf/2404.19109
+75. Bitcoin Research with a Transaction Graph Dataset - arXiv, https://arxiv.org/html/2411.10325v1
+76. A Critical Re-Evaluation of Graph Neural Networks for Bitcoin Fraud, https://arxiv.org/abs/2604.19514
+77. arXiv:2112.13267v3 [cs.LG] 8 Dec 2022, https://arxiv.org/pdf/2112.13267
+78. arXiv:2202.04768v1 [cs.LG] 8 Feb 2022, https://arxiv.org/pdf/2202.04768
+79. Cryptocurrency Evidence in Court: Admissibility & Standards, https://spherestate.com/insights/cryptocurrency-evidence-in-court-2/
+80. Handling Of Crypto Assets As Evidence In Criminal Cases, https://prolev.kejaksaan.go.id/kejaksaan/article/view/31
+81. How to Prove Cryptocurrency Ownership in Criminal Proceedings, https://advanq.ua/en/how-to-prove-cryptocurrency-ownership-in-criminal-proceedings-key-sources-and-tools/
+82. Blockchain and Evidence Law: Legal Recognition and Admissibility, https://www.jusscriptumlaw.com/blog/blockchain-and-evidence-law-legal-recognition-and-admissibility-challenges-in-india
+83. Blockchain Attribution: The Glass Box Approach - TRM Labs, https://www.trmlabs.com/glossary/glass-box-attribution
+84. Cryptocurrency Cannot Be Used As Shield Against Criminal Liability, https://lawstreet.co/judiciary/cryptocurrency-cannot-be-used-as-shield-against-criminal-liability-for-fraud-orissa-hc
+85. Judicial Challenges in Dealing with Cryptocurrency, https://dandapala.com/opini/detail/judicial-challenges-in-dealing-with-cryptocurrency
+86. FATF Finds Travel Rule Enforcement Lagging in 2026 VASP Update, https://shuftipro.com/news/fatf-travel-rule-enforcement-lagging-2026-vasp-update/

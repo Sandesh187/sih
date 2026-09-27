@@ -1,0 +1,14 @@
+node_modules/
+.next/
+dist/
+build/
+.env
+frontend/node_modules/
+frontend/.next/
+backend/venv/
+backend/__pycache__/
+backend/app/__pycache__/
+**/__pycache__/
+*.pyc
+backend/models/*.pth
+*.log
