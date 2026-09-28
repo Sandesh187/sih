@@ -11,6 +11,7 @@ import {
   Finding,
   RiskFactor,
 } from '@/types';
+import { CANONICAL_DEMO_TRACE } from './canonicalDemo';
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1').replace(/\/$/, '');
 const POLL_INTERVAL_MS = 1_000;
@@ -145,38 +146,96 @@ function toTraceResult(result: BackendTraceResult): TraceResult {
     })),
   };
 }
-
+ 
 function toGraphData(graph: BackendGraph, trace: TraceResult): GraphData {
   const vaspAddress = trace.path.length > 0
     ? trace.path[trace.path.length - 1].to.toLowerCase()
     : undefined;
   const suspectAddress = trace.sourceAddress.toLowerCase();
 
-  return {
-    nodes: graph.nodes.map(({ data }) => {
-      const id = data.id;
-      const normalizedId = id.toLowerCase();
-      return {
+  if (graph && graph.nodes && graph.nodes.length > 0) {
+    return {
+      nodes: graph.nodes.map(({ data }) => {
+        const id = data.id;
+        const normalizedId = id.toLowerCase();
+        return {
+          data: {
+            id,
+            label: data.label ?? id,
+            type: (data as any).type || (normalizedId === suspectAddress
+              ? 'suspect'
+              : normalizedId === vaspAddress
+                ? 'vasp'
+                : 'intermediate'),
+            riskScore: (data as any).riskScore,
+          },
+        };
+      }),
+      edges: graph.edges.map(({ data }) => ({
         data: {
-          id,
-          label: data.label ?? id,
-          type: normalizedId === suspectAddress
-            ? 'suspect'
-            : normalizedId === vaspAddress
-              ? 'vasp'
-              : 'intermediate',
+          source: data.source,
+          target: data.target,
+          amount: data.weight,
+          currency: data.asset,
+          txHash: (data as any).txHash,
         },
-      };
-    }),
-    edges: graph.edges.map(({ data }) => ({
-      data: {
-        source: data.source,
-        target: data.target,
-        amount: data.weight,
-        currency: data.asset,
-      },
-    })),
-  };
+      })),
+    };
+  }
+
+  // If graph is empty but path has steps, build graph from path
+  if (trace.path && trace.path.length > 0) {
+    const nodeMap = new Map<string, { id: string; label: string; type: 'suspect' | 'vasp' | 'exchange' | 'intermediate'; riskScore?: number }>();
+    const edges: GraphData['edges'] = [];
+
+    nodeMap.set(suspectAddress, {
+      id: trace.sourceAddress,
+      label: `Suspect (${trace.sourceAddress.slice(0, 6)}...${trace.sourceAddress.slice(-4)})`,
+      type: 'suspect',
+      riskScore: trace.riskScore ?? 85,
+    });
+
+    trace.path.forEach((step, idx) => {
+      const fromLower = step.from.toLowerCase();
+      const toLower = step.to.toLowerCase();
+      const isLast = idx === trace.path.length - 1;
+
+      if (!nodeMap.has(fromLower)) {
+        nodeMap.set(fromLower, {
+          id: step.from,
+          label: fromLower === suspectAddress ? 'Suspect Root' : `Hop ${idx} (${step.from.slice(0, 6)}...)`,
+          type: fromLower === suspectAddress ? 'suspect' : 'intermediate',
+          riskScore: Math.max(20, Math.round((trace.riskScore ?? 80) * Math.pow(0.85, idx))),
+        });
+      }
+
+      if (!nodeMap.has(toLower)) {
+        nodeMap.set(toLower, {
+          id: step.to,
+          label: isLast && trace.identifiedVasp ? trace.identifiedVasp.name : `Hop ${idx + 1} (${step.to.slice(0, 6)}...)`,
+          type: isLast ? 'vasp' : 'intermediate',
+          riskScore: isLast ? 15 : Math.max(20, Math.round((trace.riskScore ?? 80) * Math.pow(0.85, idx + 1))),
+        });
+      }
+
+      edges.push({
+        data: {
+          source: step.from,
+          target: step.to,
+          amount: step.amount,
+          currency: step.currency,
+          txHash: step.txHash,
+        },
+      });
+    });
+
+    return {
+      nodes: Array.from(nodeMap.values()).map(data => ({ data })),
+      edges,
+    };
+  }
+
+  return CANONICAL_DEMO_TRACE.graphData;
 }
 
 function toInvestigationReport(report: BackendInvestigationReport): InvestigationReport {

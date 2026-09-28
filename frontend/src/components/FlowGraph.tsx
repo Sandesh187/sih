@@ -16,7 +16,9 @@ import {
   EdgeLabelRenderer,
   getBezierPath,
   Node,
-  Edge
+  Edge,
+  ReactFlowProvider,
+  useReactFlow
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { GraphData } from '../types';
@@ -129,7 +131,22 @@ const edgeTypes = {
   custom: CustomEdge,
 };
 
-export default function FlowGraph({ data, onNodeClick, highlightedPath = [] }: FlowGraphProps) {
+function FlowAutoCenter({ nodes }: { nodes: Node[] }) {
+  const { fitView } = useReactFlow();
+
+  React.useEffect(() => {
+    if (nodes && nodes.length > 0) {
+      const timer = setTimeout(() => {
+        fitView({ padding: 0.25, duration: 600 });
+      }, 80);
+      return () => clearTimeout(timer);
+    }
+  }, [nodes, fitView]);
+
+  return null;
+}
+
+function FlowGraphInner({ data, onNodeClick, highlightedPath = [] }: FlowGraphProps) {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     // Basic left-to-right layout based on BFS
     const nodeDepths: Record<string, number> = {};
@@ -241,7 +258,7 @@ export default function FlowGraph({ data, onNodeClick, highlightedPath = [] }: F
   }, [onNodeClick]);
 
   return (
-    <div className="w-full h-full min-h-[500px] rounded-2xl overflow-hidden glass-card border border-[var(--border-color)] bg-[var(--bg-app)] relative shadow-sm">
+    <div className="w-full h-full min-h-[500px] overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 relative shadow-inner">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -255,8 +272,9 @@ export default function FlowGraph({ data, onNodeClick, highlightedPath = [] }: F
         minZoom={0.2}
         maxZoom={2}
       >
+        <FlowAutoCenter nodes={nodes} />
         <Background color="rgba(148, 163, 184, 0.15)" gap={16} size={1} />
-        <Controls className="!bg-white dark:!bg-[#12121a] !border-[var(--border-color)] !fill-slate-700 dark:!fill-slate-200 !shadow-sm" />
+        <Controls className="!bg-white dark:!bg-[#12121a] !border-slate-200 dark:!border-slate-800 !fill-slate-700 dark:!fill-slate-200 !shadow-sm" />
         <MiniMap 
           nodeColor={(n) => {
             const data = n.data as any;
@@ -266,9 +284,17 @@ export default function FlowGraph({ data, onNodeClick, highlightedPath = [] }: F
             return '#94A3B8';
           }}
           maskColor="rgba(15, 23, 42, 0.4)"
-          className="!bg-white dark:!bg-[#12121a] !border-[var(--border-color)] rounded-xl overflow-hidden !shadow-md" 
+          className="!bg-white dark:!bg-[#12121a] !border-slate-200 dark:!border-slate-800 rounded-xl overflow-hidden !shadow-md" 
         />
       </ReactFlow>
     </div>
+  );
+}
+
+export default function FlowGraph(props: FlowGraphProps) {
+  return (
+    <ReactFlowProvider>
+      <FlowGraphInner {...props} />
+    </ReactFlowProvider>
   );
 }
