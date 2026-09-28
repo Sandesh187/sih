@@ -5,12 +5,12 @@
 @layer base {
   :root,
   html.dark {
-    --bg-app: #0B0E17;
-    --bg-surface: #111625;
-    --bg-surface-elevated: #1A2238;
-    --text-main: #F8FAFC;
-    --text-muted: #94A3B8;
-    --border-color: rgba(255, 255, 255, 0.08);
+    --bg-app: #020617; /* slate-950 */
+    --bg-surface: #0F172A; /* slate-900 */
+    --bg-surface-elevated: #1E293B; /* slate-800 */
+    --text-main: #F8FAFC; /* slate-100 */
+    --text-muted: #94A3B8; /* slate-400 */
+    --border-color: #1E293B; /* slate-800 */
 
     --background: var(--bg-app);
     --foreground: var(--text-main);
@@ -23,12 +23,12 @@
   }
 
   html.light {
-    --bg-app: #F8FAFC;
+    --bg-app: #F8FAFC; /* slate-50 */
     --bg-surface: #FFFFFF;
-    --bg-surface-elevated: #F1F5F9;
-    --text-main: #0F172A;
-    --text-muted: #64748B;
-    --border-color: #E2E8F0;
+    --bg-surface-elevated: #F1F5F9; /* slate-100 */
+    --text-main: #0F172A; /* slate-900 */
+    --text-muted: #64748B; /* slate-500 */
+    --border-color: #E2E8F0; /* slate-200 */
 
     --background: var(--bg-app);
     --foreground: var(--text-main);
@@ -43,7 +43,7 @@
   body {
     background-color: var(--bg-app);
     color: var(--text-main);
-    background-image: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+    background-image: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
       radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
     background-attachment: fixed;
     transition: background-color 0.25s ease, color 0.25s ease;
@@ -56,7 +56,7 @@
 
 @layer components {
   .glass-card {
-    background: rgba(17, 22, 37, 0.75);
+    background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-color);
@@ -66,7 +66,7 @@
   html.light .glass-card {
     background: rgba(255, 255, 255, 0.95);
     border: 1px solid var(--border-color);
-    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
   }
 
   .text-gradient {
