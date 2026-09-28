@@ -14,10 +14,17 @@ async def lifespan(app: FastAPI):
     app.state.redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
     try:
         await app.state.redis.ping()
+        print("[INFO] Connected to Redis successfully.")
+    except Exception as e:
+        print(f"[WARNING] Redis is offline ({e}). Start Docker / Redis for full tracing functionality.")
+    try:
         yield
     finally:
         await app.state.http_client.aclose()
-        await app.state.redis.aclose()
+        try:
+            await app.state.redis.aclose()
+        except Exception:
+            pass
 
 app = FastAPI(
     title="SIH26182 Crypto VASP Attribution Engine API",
