@@ -17,6 +17,15 @@ async def lifespan(app: FastAPI):
         print("[INFO] Connected to Redis successfully.")
     except Exception as e:
         print(f"[WARNING] Redis is offline ({e}). Start Docker / Redis for full tracing functionality.")
+
+    # Initialize SQLite persistent database
+    try:
+        from app.persistence.db import init_db
+        await init_db()
+        print("[INFO] SQLite database (app.db) initialized successfully.")
+    except Exception as e:
+        print(f"[WARNING] SQLite database initialization error: {e}")
+
     try:
         yield
     finally:

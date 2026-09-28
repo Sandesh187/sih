@@ -37,5 +37,30 @@ async def get_findings(
                     pass
                     
     # Sort by created_at descending
+    if not findings:
+        try:
+            from datetime import datetime
+            from app.persistence.repository import SQLiteRepository
+            sql_findings = await SQLiteRepository.list_findings(case_id=case_id)
+            for sf in sql_findings:
+                f = Finding(
+                    id=sf.id,
+                    case_id=sf.case_id,
+                    trace_id=sf.trace_id,
+                    type=sf.type,
+                    severity=sf.severity,
+                    title=sf.title,
+                    description=sf.description,
+                    affected_addresses=sf.affected_addresses or [],
+                    evidence_ids=sf.evidence_ids or [],
+                    status=sf.status,
+                    reviewed_by=sf.reviewed_by,
+                    reviewed_at=datetime.fromisoformat(sf.reviewed_at) if sf.reviewed_at and "T" in str(sf.reviewed_at) else None,
+                    created_at=datetime.fromisoformat(sf.created_at) if "T" in str(sf.created_at) else datetime.utcnow(),
+                )
+                findings.append(f)
+        except Exception:
+            pass
+
     findings.sort(key=lambda x: x.created_at, reverse=True)
     return findings

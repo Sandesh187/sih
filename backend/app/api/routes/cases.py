@@ -18,6 +18,7 @@ from app.domain.evidence_vault import EvidenceVault
 from app.domain.audit_logger import AuditLogger
 from app.domain.attribution_scorer import AttributionScorer
 from app.domain.reports.pdf_compiler import ForensicPDFCompiler
+from app.persistence.repository import SQLiteRepository
 
 router = APIRouter(prefix="/cases", tags=["cases"])
 
@@ -53,6 +54,12 @@ async def create_case(
         pipe.sadd(KEY_CASE_LIST, case_id)
         await pipe.execute()
 
+    # Dual-write to SQLite database for ACID persistence
+    try:
+        await SQLiteRepository.upsert_case(case.model_dump())
+    except Exception as exc:
+        pass
+
     # Log Audit Event
     audit = AuditLogger(redis)
     await audit.log_event(
@@ -72,8 +79,36 @@ async def list_cases(
 ):
     """List all registered investigation cases."""
     case_ids = await redis.smembers(KEY_CASE_LIST)
+    
+    # If Redis is empty, query persistent SQLite database
     if not case_ids:
-        return []
+        sql_cases = await SQLiteRepository.list_cases(status=status.value if status else None)
+        result_cases: List[Case] = []
+        for sc in sql_cases:
+            c = Case(
+                id=sc.id,
+                fir_number=sc.fir_number,
+                complainant_name=sc.complainant_name,
+                police_station=sc.police_station,
+                loss_amount_inr=sc.loss_amount_inr,
+                loss_amount_crypto=sc.loss_amount_crypto,
+                crypto_symbol=sc.crypto_symbol,
+                root_suspect_address=sc.root_suspect_address,
+                chain=sc.chain,
+                status=CaseStatus(sc.status),
+                traces=sc.traces or [],
+                notes=[CaseNote(id=n.id, author=n.author, note=n.note, timestamp=n.timestamp) for n in sc.notes] if sc.notes else [],
+                created_at=sc.created_at,
+                updated_at=sc.updated_at,
+            )
+            result_cases.append(c)
+            # Warm up Redis cache in background
+            try:
+                await redis.set(case_key(sc.id), c.model_dump_json())
+                await redis.sadd(KEY_CASE_LIST, sc.id)
+            except Exception:
+                pass
+        return result_cases
 
     clean_ids = [cid.decode("utf-8") if isinstance(cid, bytes) else str(cid) for cid in case_ids]
     keys = [case_key(cid) for cid in clean_ids]
@@ -98,7 +133,31 @@ async def get_case(
     """Retrieve full details of a specific investigation case."""
     raw = await redis.get(case_key(case_id))
     if not raw:
-        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found.")
+        # Fallback to persistent SQLite database
+        sc = await SQLiteRepository.get_case(case_id)
+        if not sc:
+            raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found.")
+        c = Case(
+            id=sc.id,
+            fir_number=sc.fir_number,
+            complainant_name=sc.complainant_name,
+            police_station=sc.police_station,
+            loss_amount_inr=sc.loss_amount_inr,
+            loss_amount_crypto=sc.loss_amount_crypto,
+            crypto_symbol=sc.crypto_symbol,
+            root_suspect_address=sc.root_suspect_address,
+            chain=sc.chain,
+            status=CaseStatus(sc.status),
+            traces=sc.traces or [],
+            notes=[CaseNote(id=n.id, author=n.author, note=n.note, timestamp=n.timestamp) for n in sc.notes] if sc.notes else [],
+            created_at=sc.created_at,
+            updated_at=sc.updated_at,
+        )
+        try:
+            await redis.set(case_key(case_id), c.model_dump_json())
+        except Exception:
+            pass
+        return c
     return Case.model_validate_json(raw)
 
 
@@ -133,6 +192,11 @@ async def update_case(
         case.updated_at = datetime.utcnow()
         await redis.set(case_key(case_id), case.model_dump_json())
 
+        try:
+            await SQLiteRepository.upsert_case(case.model_dump())
+        except Exception:
+            pass
+
         audit = AuditLogger(redis)
         await audit.log_event(
             case_id=case_id,
@@ -166,6 +230,17 @@ async def add_case_note(
     case.updated_at = datetime.utcnow()
 
     await redis.set(case_key(case_id), case.model_dump_json())
+
+    try:
+        await SQLiteRepository.upsert_case(case.model_dump())
+        await SQLiteRepository.add_case_note(case_id, {
+            "id": note.id,
+            "author": note.author,
+            "note": note.note,
+            "timestamp": note.timestamp.isoformat(),
+        })
+    except Exception:
+        pass
 
     audit = AuditLogger(redis)
     await audit.log_event(

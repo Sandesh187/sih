@@ -55,7 +55,10 @@ yarn-error.log*
 pnpm-debug.log*
 scratch/
 tmp/
-temp/
+# Database
+*.db
+*.sqlite
+backend/*.db
 
 # Generated Reports & Deliverables
 backend/generated_reports/*.pdf

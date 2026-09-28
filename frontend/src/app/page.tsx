@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, AlertTriangle, ShieldCheck, Search, Filter, Download, ArrowUpRight, ArrowDownRight, RefreshCw, Layers } from 'lucide-react';
+import { Activity, AlertTriangle, ShieldCheck, Search, Download, ArrowUpRight, ArrowDownRight, RefreshCw, Layers } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
@@ -14,16 +14,16 @@ const sparklineData3 = [{ v: 20 }, { v: 15 }, { v: 18 }, { v: 12 }, { v: 10 }, {
 const sparklineData4 = [{ v: 2 }, { v: 4 }, { v: 3 }, { v: 6 }, { v: 8 }, { v: 7 }, { v: 10 }];
 
 const pieData = [
-  { name: 'Ethereum', value: 400, color: '#627EEA' },
-  { name: 'Tron', value: 300, color: '#FF0013' },
-  { name: 'BSC', value: 200, color: '#F3BA2F' },
+  { name: 'Ethereum', value: 400, color: '#2563EB' },
+  { name: 'Tron', value: 300, color: '#EF4444' },
+  { name: 'BSC', value: 200, color: '#F59E0B' },
 ];
 
 const barData = [
-  { name: 'Critical', count: 45, color: '#ff4444' },
-  { name: 'High', count: 85, color: '#ffaa00' },
-  { name: 'Medium', count: 120, color: '#00d4ff' },
-  { name: 'Low', count: 350, color: '#00ff88' },
+  { name: 'Critical', count: 45, color: '#EF4444' },
+  { name: 'High', count: 85, color: '#F59E0B' },
+  { name: 'Medium', count: 120, color: '#3B82F6' },
+  { name: 'Low', count: 350, color: '#10B981' },
 ];
 
 const mockTraces = [
@@ -40,22 +40,29 @@ const StatCard = ({ title, value, change, isPositive, data, icon: Icon, active, 
   <div 
     onClick={onClick}
     className={cn(
-      "glass-card p-6 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group",
-      active ? "border-[#00d4ff] shadow-[0_0_15px_rgba(0,212,255,0.2)]" : "hover:border-white/20 hover:bg-white/5"
+      "glass-card p-6 rounded-2xl cursor-pointer transition-all duration-300 relative overflow-hidden group border border-[var(--border-color)] bg-[var(--bg-surface)]",
+      active 
+        ? "border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.2)] bg-blue-500/5" 
+        : "hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md"
     )}
   >
     <div className="flex justify-between items-start mb-4">
       <div>
-        <p className="text-gray-400 text-sm font-medium mb-1">{title}</p>
-        <h3 className="text-2xl font-bold">{value}</h3>
+        <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">{title}</p>
+        <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</h3>
       </div>
-      <div className={cn("p-2 rounded-lg", active ? "bg-[#00d4ff]/20 text-[#00d4ff]" : "bg-white/5 text-gray-400 group-hover:text-white transition-colors")}>
+      <div className={cn(
+        "p-2.5 rounded-xl transition-colors", 
+        active 
+          ? "bg-blue-600 text-white shadow-sm" 
+          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+      )}>
         <Icon className="w-5 h-5" />
       </div>
     </div>
     <div className="flex items-center justify-between">
-      <div className={cn("flex items-center text-sm font-medium", isPositive ? "text-[#00ff88]" : "text-[#ff4444]")}>
-        {isPositive ? <ArrowUpRight className="w-4 h-4 mr-1" /> : <ArrowDownRight className="w-4 h-4 mr-1" />}
+      <div className={cn("flex items-center text-xs font-bold", isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
+        {isPositive ? <ArrowUpRight className="w-4 h-4 mr-0.5" /> : <ArrowDownRight className="w-4 h-4 mr-0.5" />}
         {change}%
       </div>
       <div className="h-10 w-24">
@@ -63,11 +70,11 @@ const StatCard = ({ title, value, change, isPositive, data, icon: Icon, active, 
           <AreaChart data={data}>
             <defs>
               <linearGradient id={`color-${title}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={isPositive ? "#00ff88" : "#ff4444"} stopOpacity={0.3}/>
-                <stop offset="95%" stopColor={isPositive ? "#00ff88" : "#ff4444"} stopOpacity={0}/>
+                <stop offset="5%" stopColor={isPositive ? "#10B981" : "#EF4444"} stopOpacity={0.35}/>
+                <stop offset="95%" stopColor={isPositive ? "#10B981" : "#EF4444"} stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <Area type="monotone" dataKey="v" stroke={isPositive ? "#00ff88" : "#ff4444"} fillOpacity={1} fill={`url(#color-${title})`} strokeWidth={2} />
+            <Area type="monotone" dataKey="v" stroke={isPositive ? "#10B981" : "#EF4444"} fillOpacity={1} fill={`url(#color-${title})`} strokeWidth={2} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -80,7 +87,6 @@ export default function DashboardPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  
   const [realTraces, setRealTraces] = useState<any[]>([]);
 
   const fetchRecent = async () => {
@@ -95,7 +101,7 @@ export default function DashboardPage() {
 
   const { secondsAgo, isRefreshing, refresh } = useAutoRefresh(async () => {
     await fetchRecent();
-    await new Promise(r => setTimeout(r, 400)); // UI effect
+    await new Promise(r => setTimeout(r, 400));
   }, 30000);
 
   useEffect(() => {
@@ -119,43 +125,54 @@ export default function DashboardPage() {
     document.body.removeChild(link);
   };
 
-  const getRiskColor = (risk: string) => {
-    switch(risk) {
-      case 'Critical': return 'bg-[#ff4444] shadow-[#ff4444]/50 shadow-lg';
-      case 'High': return 'bg-[#ffaa00] shadow-[#ffaa00]/50 shadow-lg';
-      case 'Medium': return 'bg-[#00d4ff] shadow-[#00d4ff]/50 shadow-lg';
-      case 'Low': return 'bg-[#00ff88] shadow-[#00ff88]/50 shadow-lg';
-      default: return 'bg-gray-500';
+  const getRiskBadge = (risk: string) => {
+    switch(risk?.toLowerCase()) {
+      case 'critical':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-800"><span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400" />Critical</span>;
+      case 'high':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800"><span className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400" />High</span>;
+      case 'medium':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-800"><span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />Medium</span>;
+      case 'low':
+      default:
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />Low</span>;
     }
   };
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto animate-fade-in pb-12">
+    <div className="space-y-6 max-w-[1600px] mx-auto animate-fade-in pb-12 text-[var(--text-main)]">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-1">Dashboard</h1>
-          <p className="text-gray-400">Overview of tracing activity and risks</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mb-1">
+            Forensic Intelligence Dashboard
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">
+            Live overview of cryptocurrency tracing activity, VASP identification, and counterparty risks
+          </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-400 flex items-center">
+        <div className="flex items-center gap-3">
+          <div className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center">
             {isRefreshing ? (
-              <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Updating...</span>
+              <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-medium">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Updating...
+              </span>
             ) : (
               `Last updated: ${secondsAgo}s ago`
             )}
           </div>
           <button 
             onClick={refresh}
-            className="p-2 glass-card rounded-lg hover:bg-white/10 transition-colors"
+            className="p-2 glass-card rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-sm"
+            title="Refresh metrics"
           >
-            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin text-[#00d4ff]")} />
+            <RefreshCw className={cn("w-4 h-4 text-slate-600 dark:text-slate-300", isRefreshing && "animate-spin text-blue-600 dark:text-blue-400")} />
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard 
           title="Total Traces" 
           value="12,450" 
@@ -199,109 +216,109 @@ export default function DashboardPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="glass-card p-4 rounded-xl flex flex-col lg:flex-row gap-4 items-center justify-between">
+      <div className="glass-card p-4 rounded-2xl flex flex-col lg:flex-row gap-4 items-center justify-between border border-[var(--border-color)] bg-[var(--bg-surface)]">
         <div className="relative w-full lg:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
           <input 
             ref={searchInputRef}
             type="text" 
             placeholder="Search address, VASP, or ID... (Ctrl+K)" 
-            className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:border-[#00d4ff]/50 transition-colors"
+            className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-50 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all font-mono"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-          <select className="bg-black/20 border border-white/10 rounded-lg px-4 py-2 focus:outline-none appearance-none min-w-[120px]">
-            <option>All VASPs</option>
-            <option>Binance</option>
-            <option>Kraken</option>
-            <option>WazirX</option>
-            <option>Unknown</option>
+          <select className="bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30 min-w-[120px] cursor-pointer">
+            <option value="all">All VASPs</option>
+            <option value="binance">Binance</option>
+            <option value="kraken">Kraken</option>
+            <option value="wazirx">WazirX</option>
+            <option value="unknown">Unknown</option>
           </select>
-          <select className="bg-black/20 border border-white/10 rounded-lg px-4 py-2 focus:outline-none appearance-none min-w-[120px]">
-            <option>All Risks</option>
-            <option>Critical</option>
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
+          <select className="bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30 min-w-[120px] cursor-pointer">
+            <option value="all">All Risks</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
           </select>
-          <select className="bg-black/20 border border-white/10 rounded-lg px-4 py-2 focus:outline-none appearance-none min-w-[120px]">
-            <option>Today</option>
-            <option>This Week</option>
-            <option>This Month</option>
+          <select className="bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30 min-w-[120px] cursor-pointer">
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
           </select>
           <button 
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-[#00d4ff]/10 text-[#00d4ff] rounded-lg hover:bg-[#00d4ff]/20 transition-colors border border-[#00d4ff]/30 whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600/20 text-xs font-semibold rounded-xl border border-blue-500/30 transition-colors whitespace-nowrap shadow-sm"
           >
-            <Download className="w-4 h-4" /> Export
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="glass-card rounded-xl overflow-hidden">
+      {/* Traces Table */}
+      <div className="glass-card rounded-2xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-surface)] shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
             <thead>
-              <tr className="border-b border-white/10 bg-black/20 text-gray-400 text-sm">
-                <th className="p-4 font-medium cursor-pointer hover:text-white">Trace ID</th>
-                <th className="p-4 font-medium cursor-pointer hover:text-white">Target Address</th>
-                <th className="p-4 font-medium cursor-pointer hover:text-white">Chain</th>
-                <th className="p-4 font-medium cursor-pointer hover:text-white">VASP</th>
-                <th className="p-4 font-medium cursor-pointer hover:text-white">Risk Level</th>
-                <th className="p-4 font-medium cursor-pointer hover:text-white">Confidence</th>
-                <th className="p-4 font-medium cursor-pointer hover:text-white">Amount</th>
-                <th className="p-4 font-medium cursor-pointer hover:text-white">Time</th>
+              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                <th className="p-4">Trace ID</th>
+                <th className="p-4">Target Address</th>
+                <th className="p-4">Chain</th>
+                <th className="p-4">Identified VASP</th>
+                <th className="p-4">Risk Level</th>
+                <th className="p-4">Confidence</th>
+                <th className="p-4">Amount</th>
+                <th className="p-4">Time</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80 text-xs">
               {displayTraces.map((trace, i) => (
                 <tr 
                   key={i} 
                   onClick={() => router.push(`/trace?id=${trace.id}&address=${trace.target}&chain=${trace.chain.toLowerCase()}`)}
-                  className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors"
+                  className="border-b border-slate-200 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
                 >
-                  <td className="p-4 font-mono text-[#00d4ff]">{trace.id}</td>
-                  <td className="p-4 font-mono text-sm">{trace.target}</td>
+                  <td className="p-4 font-mono font-semibold text-blue-600 dark:text-blue-400">{trace.id}</td>
+                  <td className="p-4 font-mono text-slate-700 dark:text-slate-300 font-medium">{trace.target}</td>
                   <td className="p-4">
-                    <span className="px-2 py-1 rounded bg-white/10 text-xs font-semibold">{trace.chain}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                      {trace.chain}
+                    </span>
                   </td>
-                  <td className="p-4">{trace.vasp}</td>
+                  <td className="p-4 font-medium text-slate-900 dark:text-slate-100">{trace.vasp}</td>
+                  <td className="p-4">{getRiskBadge(trace.risk)}</td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <div className={cn("w-2 h-2 rounded-full", getRiskColor(trace.risk))} />
-                      <span>{trace.risk}</span>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-black/40 rounded-full overflow-hidden">
+                      <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-[#00d4ff]" 
+                          className="h-full bg-blue-600 dark:bg-blue-500 rounded-full" 
                           style={{ width: `${trace.confidence}%` }}
                         />
                       </div>
-                      <span className="text-sm">{trace.confidence}%</span>
+                      <span className="font-mono text-slate-600 dark:text-slate-400">{trace.confidence}%</span>
                     </div>
                   </td>
-                  <td className="p-4">{trace.amount}</td>
-                  <td className="p-4 text-sm text-gray-400">{trace.time}</td>
+                  <td className="p-4 font-mono font-semibold text-emerald-600 dark:text-emerald-400">{trace.amount}</td>
+                  <td className="p-4 text-slate-500 dark:text-slate-400">{trace.time}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <div className="p-4 border-t border-white/10 flex justify-center">
-          <button className="text-sm text-gray-400 hover:text-white transition-colors">Show More</button>
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800 flex justify-center bg-slate-50/50 dark:bg-slate-900/30">
+          <button className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline transition-colors py-1 px-3">
+            Show More Records
+          </button>
         </div>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card p-6 rounded-xl">
-          <h3 className="text-lg font-bold mb-6">Chain Distribution</h3>
+        <div className="glass-card p-6 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-6">Chain Distribution</h3>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -319,15 +336,19 @@ export default function DashboardPage() {
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#12121a', borderColor: 'rgba(255,255,255,0.1)' }}
-                  itemStyle={{ color: '#fff' }}
+                  contentStyle={{ 
+                    backgroundColor: 'var(--bg-surface-elevated)', 
+                    borderColor: 'var(--border-color)',
+                    borderRadius: '0.75rem',
+                    color: 'var(--text-main)' 
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div className="flex justify-center gap-6 mt-4">
             {pieData.map((entry, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm">
+              <div key={i} className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
                 <span>{entry.name}</span>
               </div>
@@ -335,19 +356,24 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="glass-card p-6 rounded-xl">
-          <h3 className="text-lg font-bold mb-6">Risk Distribution</h3>
+        <div className="glass-card p-6 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-6">Risk Distribution</h3>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="name" stroke="#666" tick={{ fill: '#666' }} />
-                <YAxis stroke="#666" tick={{ fill: '#666' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
+                <XAxis dataKey="name" stroke="#94A3B8" tick={{ fill: '#94A3B8', fontSize: 11 }} />
+                <YAxis stroke="#94A3B8" tick={{ fill: '#94A3B8', fontSize: 11 }} />
                 <Tooltip 
-                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                  contentStyle={{ backgroundColor: '#12121a', borderColor: 'rgba(255,255,255,0.1)' }}
+                  cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
+                  contentStyle={{ 
+                    backgroundColor: 'var(--bg-surface-elevated)', 
+                    borderColor: 'var(--border-color)',
+                    borderRadius: '0.75rem',
+                    color: 'var(--text-main)' 
+                  }}
                 />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                   {barData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}

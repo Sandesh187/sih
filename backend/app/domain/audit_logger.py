@@ -61,6 +61,24 @@ class AuditLogger:
             pipe.zadd(audit_timeline_key(case_id), {event_id: score})
             await pipe.execute()
 
+        # Dual-write to SQLite database
+        try:
+            from app.persistence.repository import SQLiteRepository
+            await SQLiteRepository.add_audit_event({
+                "id": event.id,
+                "case_id": event.case_id,
+                "actor_id": event.actor_id,
+                "actor_role": event.actor_role,
+                "event_type": event.event_type.value if hasattr(event.event_type, "value") else str(event.event_type),
+                "action_summary": event.action_summary,
+                "target_entity": event.target_entity,
+                "metadata": event.metadata,
+                "timestamp": event.timestamp.isoformat(),
+                "client_ip": event.client_ip,
+            })
+        except Exception as exc:
+            logger.warning("Failed to dual-write audit event to SQLite: %s", exc)
+
         logger.info(
             "Logged audit event %s (%s) for Case %s by %s",
             event_id, event_type.value, case_id, actor_id
@@ -80,6 +98,28 @@ class AuditLogger:
             end=offset + limit - 1,
         )
         if not event_ids:
+            # Fallback to SQLite
+            try:
+                from app.persistence.repository import SQLiteRepository
+                sql_events = await SQLiteRepository.get_case_audit_trail(case_id)
+                if sql_events:
+                    return [
+                        AuditEvent(
+                            id=se.id,
+                            case_id=se.case_id,
+                            actor_id=se.actor_id,
+                            actor_role=se.actor_role,
+                            event_type=AuditEventType(se.event_type) if se.event_type in AuditEventType.__members__.values() else AuditEventType.CASE_UPDATED,
+                            action_summary=se.action_summary,
+                            target_entity=se.target_entity,
+                            metadata=se.metadata_json or {},
+                            timestamp=datetime.fromisoformat(se.timestamp) if "T" in str(se.timestamp) else datetime.utcnow(),
+                            client_ip=se.client_ip or "127.0.0.1",
+                        )
+                        for se in sql_events[offset:offset+limit]
+                    ]
+            except Exception as exc:
+                logger.warning("Error fetching audit trail from SQLite fallback: %s", exc)
             return []
 
         clean_ids = [eid.decode("utf-8") if isinstance(eid, bytes) else str(eid) for eid in event_ids]

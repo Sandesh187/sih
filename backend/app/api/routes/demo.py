@@ -5,6 +5,7 @@ Victim EOA -> Suspect EOA -> Mule/Peel EOA -> Candidate Deposit Wallet -> Binanc
 Dynamically computes RFC-8785 canonical hashes and seed audit entries.
 """
 
+import json
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends
 from redis.asyncio import Redis
@@ -29,6 +30,7 @@ from app.core.redis_keys import (
 from app.domain.evidence_vault import EvidenceVault
 from app.domain.audit_logger import AuditLogger
 from app.domain.attribution_scorer import AttributionScorer
+from app.persistence.repository import SQLiteRepository
 
 router = APIRouter(prefix="/demo", tags=["demo"])
 
@@ -91,6 +93,19 @@ async def seed_demo_scenario(redis: Redis = Depends(get_redis)):
 
     await redis.set(case_key(DEMO_CASE_ID), demo_case.model_dump_json())
     await redis.sadd(KEY_CASE_LIST, DEMO_CASE_ID)
+
+    # Dual-write to SQLite database
+    try:
+        await SQLiteRepository.upsert_case(demo_case.model_dump())
+        for n in demo_case.notes:
+            await SQLiteRepository.add_case_note(DEMO_CASE_ID, {
+                "id": n.id,
+                "author": n.author,
+                "note": n.note,
+                "timestamp": n.timestamp.isoformat(),
+            })
+    except Exception:
+        pass
 
     # 2. Seed Audit Trail Entries
     audit = AuditLogger(redis)
@@ -209,10 +224,24 @@ async def seed_demo_scenario(redis: Redis = Depends(get_redis)):
         "result": trace_result.model_dump(mode="json"),
     }
     await redis.set(f"{TRACE_STATE_PREFIX}{DEMO_TRACE_ID}", TraceResult.model_validate(trace_result).model_dump_json())
-    # Also support JSON state object format used by polling
-    import json
     await redis.set(f"{TRACE_STATE_PREFIX}{DEMO_TRACE_ID}", json.dumps(trace_payload))
     await redis.rpush(KEY_RECENT_TRACES, DEMO_TRACE_ID)
+
+    # Dual-write trace to SQLite database
+    try:
+        await SQLiteRepository.save_trace({
+            "trace_id": DEMO_TRACE_ID,
+            "suspect_address": SUSPECT_ADDR,
+            "chain": "ethereum",
+            "status": "completed",
+            "risk_score": 88.0,
+            "confidence_score": 0.94,
+            "vasp": trace_result.vasp.model_dump() if trace_result.vasp else None,
+            "path": [p.model_dump() for p in trace_result.path],
+            "graph": {"nodes": graph_nodes, "edges": graph_edges},
+        })
+    except Exception:
+        pass
 
     # 4. Ingest Cryptographic Evidence DAG (Dynamically Hashed!)
     vault = EvidenceVault(redis)

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import type { Case, EvidenceItem, AuditTrailResponse, IntegrityVerificationResult } from '@/types';
+import type { Case, EvidenceItem, IntegrityVerificationResult } from '@/types';
 
 function truncateHash(hash: string) {
   if (!hash || hash.length <= 16) return hash;
@@ -28,7 +28,7 @@ export default function CaseWorkspace() {
   const [evidenceData, setEvidenceData] = useState<EvidenceItem[]>([]);
   const [loadingEvidence, setLoadingEvidence] = useState(false);
 
-  const [auditData, setAuditData] = useState<any>(null); // { case_id, total_events, events }
+  const [auditData, setAuditData] = useState<any>(null);
   const [loadingAudit, setLoadingAudit] = useState(false);
 
   const [notes, setNotes] = useState<any[]>([]);
@@ -89,7 +89,7 @@ export default function CaseWorkspace() {
   const handleUpdateStatus = async (newStatus: string) => {
     if (!caseData) return;
     try {
-      const updated = await api.updateCase(id, { status: newStatus as any });
+      await api.updateCase(id, { status: newStatus as any });
       setCaseData({ ...caseData, status: newStatus as any });
     } catch (err) {
       console.error('Failed to update status', err);
@@ -119,7 +119,16 @@ export default function CaseWorkspace() {
       setIntegrityResult(res);
     } catch (err: any) {
       console.error(err);
-      setIntegrityResult({ case_id: id, is_valid: false, total_records: 0, genesis_hash: '', latest_chain_hash: '', corrupted_sequence_number: null, verification_timestamp: new Date().toISOString(), audit_notes: 'Verification request failed' });
+      setIntegrityResult({
+        case_id: id,
+        is_valid: false,
+        total_records: 0,
+        genesis_hash: '',
+        latest_chain_hash: '',
+        corrupted_sequence_number: null,
+        verification_timestamp: new Date().toISOString(),
+        audit_notes: 'Verification request failed'
+      });
     } finally {
       setVerifyingIntegrity(false);
     }
@@ -131,7 +140,7 @@ export default function CaseWorkspace() {
     
     setAddingNote(true);
     try {
-      const res = await api.addCaseNote(id, newNote);
+      await api.addCaseNote(id, newNote);
       await fetchCase();
       setNewNote('');
     } catch (err) {
@@ -144,65 +153,67 @@ export default function CaseWorkspace() {
   if (loadingCase) {
     return (
       <div className="p-8 space-y-6 animate-pulse">
-        <div className="h-10 bg-white/5 rounded-lg w-1/4"></div>
-        <div className="h-64 bg-white/5 rounded-xl w-full"></div>
+        <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/4"></div>
+        <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl w-full"></div>
       </div>
     );
   }
 
   if (error || !caseData) {
     return (
-      <div className="p-8 flex items-center justify-center flex-col text-[#ff4444]">
+      <div className="p-8 flex items-center justify-center flex-col text-red-600 dark:text-red-400">
         <AlertCircle className="w-12 h-12 mb-4" />
         <h2 className="text-xl font-semibold">Error Loading Case</h2>
-        <p className="mt-2 text-gray-400">{error}</p>
+        <p className="mt-2 text-slate-500 dark:text-slate-400 text-sm">{error}</p>
       </div>
     );
   }
 
   const getTierColor = (tier: string) => {
     switch (tier) {
-      case 'OBSERVED': return 'bg-cyan-900/50 text-[#00d4ff] border-[#00d4ff]/20';
-      case 'DERIVED': return 'bg-blue-900/50 text-blue-400 border-blue-500/20';
-      case 'INFERRED': return 'bg-purple-900/50 text-purple-400 border-purple-500/20';
-      case 'HUMAN_ACTION': return 'bg-orange-900/50 text-[#ffaa00] border-[#ffaa00]/20';
-      default: return 'bg-gray-800 text-gray-300 border-gray-600';
+      case 'OBSERVED': return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800';
+      case 'DERIVED': return 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800';
+      case 'INFERRED': return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800';
+      case 'HUMAN_ACTION': return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'OPEN': return 'bg-[#00ff88]/20 text-[#00ff88]';
-      case 'IN_PROGRESS': return 'bg-[#ffaa00]/20 text-[#ffaa00]';
-      case 'CLOSED': return 'bg-gray-500/20 text-gray-400';
-      default: return 'bg-white/10 text-white';
+    switch (status?.toLowerCase()) {
+      case 'active': return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800';
+      case 'under_review': return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800';
+      case 'closed': return 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700';
+      default: return 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800/60 dark:text-slate-400 dark:border-slate-700';
     }
   };
 
   const getEventDotColor = (type: string) => {
-    if (type.includes('CREATE') || type.includes('ADD')) return 'bg-[#00ff88]';
-    if (type.includes('UPDATE') || type.includes('EDIT')) return 'bg-[#00d4ff]';
-    if (type.includes('TAMPER') || type.includes('DELETE') || type.includes('CORRUPT')) return 'bg-[#ff4444]';
-    return 'bg-white/50';
+    if (type.includes('CREATE') || type.includes('ADD')) return 'bg-emerald-500';
+    if (type.includes('UPDATE') || type.includes('EDIT')) return 'bg-blue-500';
+    if (type.includes('TAMPER') || type.includes('DELETE') || type.includes('CORRUPT')) return 'bg-red-500';
+    return 'bg-slate-400';
   };
 
   return (
-    <div className="min-h-screen bg-black/90 text-white p-6 pb-20 font-sans">
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] p-4 md:p-8 pb-20 font-sans transition-colors">
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 flex items-center gap-3">
               Case Workspace
-              <span className="text-[#00d4ff] text-xl font-mono">#{id}</span>
+              <span className="text-blue-600 dark:text-blue-400 text-xl font-mono">#{id.substring(0, 8)}</span>
             </h1>
-            <p className="text-gray-400 mt-1">{caseData.fir_number} • {caseData.complainant_name}</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm font-mono">
+              FIR: {caseData.fir_number} • Complainant: {caseData.complainant_name}
+            </p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-white/10 flex space-x-8">
+        <div className="border-b border-slate-200 dark:border-slate-800 flex space-x-8">
           {[
             { id: 'overview', label: 'Overview', icon: FileText },
             { id: 'evidence', label: 'Evidence Vault', icon: Shield },
@@ -213,10 +224,10 @@ export default function CaseWorkspace() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "pb-4 flex items-center gap-2 font-medium transition-all duration-300",
+                "pb-3.5 flex items-center gap-2 font-medium text-sm transition-all duration-200 relative",
                 activeTab === tab.id
-                  ? "text-[#00d4ff] border-b-2 border-[#00d4ff]"
-                  : "text-gray-400 hover:text-white"
+                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-semibold"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
               )}
             >
               <tab.icon className="w-4 h-4" />
@@ -233,71 +244,64 @@ export default function CaseWorkspace() {
             <div className="space-y-6">
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-sm text-gray-500 mb-1">FIR Number</div>
-                  <div className="font-semibold text-lg">{caseData.fir_number || 'N/A'}</div>
+                <div className="glass-card p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">FIR Number</div>
+                  <div className="font-mono font-semibold text-lg text-slate-900 dark:text-slate-100">{caseData.fir_number || 'N/A'}</div>
                 </div>
-                <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-sm text-gray-500 mb-1">Police Station</div>
-                  <div className="font-semibold text-lg">{caseData.police_station || 'N/A'}</div>
+                <div className="glass-card p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Police Station</div>
+                  <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">{caseData.police_station || 'N/A'}</div>
                 </div>
-                <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-sm text-gray-500 mb-1">Status</div>
+                <div className="glass-card p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Status</div>
                   <select 
                     value={caseData.status} 
                     onChange={(e) => handleUpdateStatus(e.target.value)}
-                    className={cn("bg-transparent outline-none font-semibold px-2 py-1 rounded text-sm -ml-2", getStatusColor(caseData.status))}
+                    className={cn("outline-none font-semibold px-2.5 py-1 rounded-lg text-xs mt-0.5 cursor-pointer", getStatusColor(caseData.status))}
                   >
-                    <option value="active" className="bg-gray-900 text-white">ACTIVE</option>
-                    <option value="under_review" className="bg-gray-900 text-white">UNDER REVIEW</option>
-                    <option value="draft" className="bg-gray-900 text-white">DRAFT</option>
-                    <option value="closed" className="bg-gray-900 text-white">CLOSED</option>
+                    <option value="active" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">ACTIVE</option>
+                    <option value="under_review" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">UNDER REVIEW</option>
+                    <option value="draft" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">DRAFT</option>
+                    <option value="closed" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">CLOSED</option>
                   </select>
                 </div>
-                <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-sm text-gray-500 mb-1">Complainant</div>
-                  <div className="font-semibold text-lg">{caseData.complainant_name || 'N/A'}</div>
+                <div className="glass-card p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Complainant</div>
+                  <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">{caseData.complainant_name || 'N/A'}</div>
                 </div>
-                <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10 lg:col-span-2">
-                  <div className="text-sm text-gray-500 mb-1">Suspect Address</div>
-                  <div className="font-mono text-[#00d4ff] text-sm break-all">{caseData.root_suspect_address || 'N/A'}</div>
+                <div className="glass-card p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] lg:col-span-2">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Suspect Address</div>
+                  <div className="font-mono text-blue-600 dark:text-blue-400 text-sm break-all font-semibold">{caseData.root_suspect_address || 'N/A'}</div>
                 </div>
-                <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-sm text-gray-500 mb-1">Chain</div>
-                  <div className="font-semibold text-lg">{caseData.chain || 'N/A'}</div>
+                <div className="glass-card p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Chain</div>
+                  <div className="font-semibold text-lg text-slate-900 dark:text-slate-100 capitalize">{caseData.chain || 'N/A'}</div>
                 </div>
-                <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-sm text-gray-500 mb-1">Loss INR</div>
-                  <div className="font-semibold text-lg text-[#ffaa00]">₹{caseData.loss_amount_inr?.toLocaleString() || '0'}</div>
+                <div className="glass-card p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Loss INR</div>
+                  <div className="font-semibold text-lg text-amber-600 dark:text-amber-400 font-mono">₹{caseData.loss_amount_inr?.toLocaleString() || '0'}</div>
                 </div>
-                <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-sm text-gray-500 mb-1">Loss Crypto</div>
-                  <div className="font-semibold text-lg">{caseData.loss_amount_crypto} {caseData.crypto_symbol}</div>
-                </div>
-                <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-sm text-gray-500 mb-1">Created</div>
-                  <div className="font-semibold">{caseData.created_at ? new Date(caseData.created_at).toLocaleString() : 'N/A'}</div>
-                </div>
-                <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-sm text-gray-500 mb-1">Updated</div>
-                  <div className="font-semibold">{caseData.updated_at ? new Date(caseData.updated_at).toLocaleString() : 'N/A'}</div>
+                <div className="glass-card p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Loss Crypto</div>
+                  <div className="font-semibold text-lg text-slate-900 dark:text-slate-100 font-mono">{caseData.loss_amount_crypto} {caseData.crypto_symbol}</div>
                 </div>
               </div>
 
+              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
                 <button 
                   onClick={handleDownloadNotice}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#00d4ff]/10 hover:bg-[#00d4ff]/20 text-[#00d4ff] border border-[#00d4ff]/20 p-4 rounded-xl transition-all font-semibold"
+                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white p-4 rounded-xl transition-all font-semibold shadow-sm hover:shadow"
                 >
                   <FileUp className="w-5 h-5" />
-                  Download Section 94 BNSS Notice
+                  <span>Download Section 94 BNSS Notice</span>
                 </button>
                 <button 
                   onClick={handleDownloadDossier}
-                  className="flex-1 flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 p-4 rounded-xl transition-all font-semibold"
+                  className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 p-4 rounded-xl transition-all font-semibold shadow-sm hover:shadow"
                 >
-                  <Download className="w-5 h-5" />
-                  Download Section 63 BSA Dossier
+                  <Download className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <span>Download Section 63 BSA Dossier</span>
                 </button>
               </div>
 
@@ -307,17 +311,17 @@ export default function CaseWorkspace() {
           {/* TAB 2: EVIDENCE VAULT */}
           {activeTab === 'evidence' && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center glass-card p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 glass-card p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
                 <div>
-                  <h3 className="font-semibold text-lg">Cryptographic Evidence Ledger</h3>
-                  <p className="text-sm text-gray-400">Immutable record of case evidence.</p>
+                  <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">Cryptographic Evidence Ledger</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Immutable SHA-256 hash-chained record for Section 63 BSA court admissibility.</p>
                 </div>
                 <button 
                   onClick={handleVerifyIntegrity}
                   disabled={verifyingIntegrity}
-                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-all"
+                  className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 px-4 py-2 rounded-lg text-xs font-semibold transition-all"
                 >
-                  <RefreshCw className={cn("w-4 h-4", verifyingIntegrity && "animate-spin")} />
+                  <RefreshCw className={cn("w-3.5 h-3.5", verifyingIntegrity && "animate-spin")} />
                   {verifyingIntegrity ? 'Verifying...' : 'Verify Ledger Integrity'}
                 </button>
               </div>
@@ -325,17 +329,19 @@ export default function CaseWorkspace() {
               {integrityResult && (
                 <div className={cn(
                   "p-4 rounded-xl border flex items-start gap-3",
-                  integrityResult.is_valid ? "bg-[#00ff88]/10 border-[#00ff88]/30 text-[#00ff88]" : "bg-[#ff4444]/10 border-[#ff4444]/30 text-[#ff4444]"
+                  integrityResult.is_valid 
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/30 dark:border-emerald-800/50 dark:text-emerald-300" 
+                    : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/30 dark:border-red-800/50 dark:text-red-300"
                 )}>
-                  {integrityResult.is_valid ? <CheckCircle2 className="w-6 h-6 mt-0.5" /> : <XCircle className="w-6 h-6 mt-0.5" />}
+                  {integrityResult.is_valid ? <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0" /> : <XCircle className="w-5 h-5 mt-0.5 shrink-0" />}
                   <div>
-                    <h4 className="font-bold text-lg">{integrityResult.is_valid ? 'Ledger Verified Successfully' : 'Integrity Compromised'}</h4>
+                    <h4 className="font-bold text-sm">{integrityResult.is_valid ? 'Ledger Integrity Verified' : 'Integrity Compromised'}</h4>
                     {integrityResult.is_valid ? (
-                      <p className="text-sm opacity-90 mt-1">
-                        Genesis Hash: <span className="font-mono">{truncateHash(integrityResult.genesis_hash || '')}</span> • {integrityResult.total_records} records intact.
+                      <p className="text-xs opacity-90 mt-1">
+                        Genesis Hash: <span className="font-mono">{truncateHash(integrityResult.genesis_hash || '')}</span> • {integrityResult.total_records} records intact and cryptographically sound.
                       </p>
                     ) : (
-                      <p className="text-sm opacity-90 mt-1">
+                      <p className="text-xs opacity-90 mt-1">
                         Mismatch detected at Sequence #{integrityResult.corrupted_sequence_number}. Cryptographic chain is broken.
                       </p>
                     )}
@@ -344,38 +350,38 @@ export default function CaseWorkspace() {
               )}
 
               {loadingEvidence ? (
-                <div className="text-center p-8 text-gray-500">Loading evidence...</div>
+                <div className="text-center p-8 text-slate-500">Loading evidence ledger...</div>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-white/10">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-black/40 text-gray-400 text-sm">
+                <div className="overflow-x-auto rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead className="bg-slate-100/90 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
                       <tr>
-                        <th className="p-4 font-medium">Seq #</th>
-                        <th className="p-4 font-medium">Tier</th>
-                        <th className="p-4 font-medium">Title</th>
-                        <th className="p-4 font-medium">Description</th>
-                        <th className="p-4 font-medium">Content Hash</th>
-                        <th className="p-4 font-medium">Chain Hash</th>
-                        <th className="p-4 font-medium">Timestamp</th>
+                        <th className="p-4">Seq #</th>
+                        <th className="p-4">Tier</th>
+                        <th className="p-4">Title</th>
+                        <th className="p-4">Description</th>
+                        <th className="p-4">Content Hash</th>
+                        <th className="p-4">Chain Hash</th>
+                        <th className="p-4">Timestamp</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5 text-sm">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80 text-xs">
                       {evidenceData.length === 0 ? (
-                        <tr><td colSpan={7} className="p-8 text-center text-gray-500">No evidence recorded yet.</td></tr>
+                        <tr><td colSpan={7} className="p-8 text-center text-slate-500">No evidence recorded yet.</td></tr>
                       ) : (
                         evidenceData.map((ev) => (
-                          <tr key={ev.sequence_number} className="hover:bg-white/5 transition-colors">
-                            <td className="p-4 font-mono text-gray-500">{ev.sequence_number}</td>
+                          <tr key={ev.sequence_number} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td className="p-4 font-mono text-slate-500">{ev.sequence_number}</td>
                             <td className="p-4">
-                              <span className={cn("px-2 py-1 rounded text-xs font-semibold border", getTierColor(ev.tier))}>
+                              <span className={cn("px-2 py-0.5 rounded text-[10px] font-semibold border", getTierColor(ev.tier))}>
                                 {ev.tier}
                               </span>
                             </td>
-                            <td className="p-4 font-medium text-white">{ev.title}</td>
-                            <td className="p-4 text-gray-400 max-w-xs truncate">{ev.description}</td>
-                            <td className="p-4 font-mono text-xs text-[#00d4ff]/80">{truncateHash(ev.content_hash)}</td>
-                            <td className="p-4 font-mono text-xs text-gray-500">{truncateHash(ev.chain_hash)}</td>
-                            <td className="p-4 text-gray-500 whitespace-nowrap">{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</td>
+                            <td className="p-4 font-medium text-slate-900 dark:text-slate-100">{ev.title}</td>
+                            <td className="p-4 text-slate-500 dark:text-slate-400 max-w-xs truncate">{ev.description}</td>
+                            <td className="p-4 font-mono text-blue-600 dark:text-blue-400">{truncateHash(ev.content_hash)}</td>
+                            <td className="p-4 font-mono text-slate-500">{truncateHash(ev.chain_hash)}</td>
+                            <td className="p-4 text-slate-500 whitespace-nowrap">{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</td>
                           </tr>
                         ))
                       )}
@@ -389,38 +395,38 @@ export default function CaseWorkspace() {
           {/* TAB 3: AUDIT TRAIL */}
           {activeTab === 'audit' && (
             <div className="space-y-6">
-              <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
-                <h3 className="font-semibold text-lg mb-6 flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-[#00d4ff]" />
+              <div className="glass-card p-6 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+                <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   System Audit Trail
-                  <span className="text-xs bg-white/10 px-2 py-1 rounded-full text-gray-300 ml-2">
+                  <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full text-slate-600 dark:text-slate-400 font-mono ml-2 border border-slate-200 dark:border-slate-700">
                     {auditData?.total_events || 0} Events
                   </span>
                 </h3>
 
                 {loadingAudit ? (
-                   <div className="text-center p-8 text-gray-500">Loading audit trail...</div>
+                   <div className="text-center p-8 text-slate-500">Loading audit trail...</div>
                 ) : !auditData?.events?.length ? (
-                  <div className="text-center p-8 text-gray-500">No events found.</div>
+                  <div className="text-center p-8 text-slate-500">No events found.</div>
                 ) : (
-                  <div className="relative border-l border-white/10 ml-4 space-y-8 pb-4">
+                  <div className="relative border-l border-slate-200 dark:border-slate-800 ml-4 space-y-6 pb-4">
                     {auditData.events.map((event: any, idx: number) => (
                       <div key={idx} className="relative pl-8">
                         <div className={cn(
-                          "absolute -left-2 top-1.5 w-4 h-4 rounded-full border-4 border-black",
+                          "absolute -left-2 top-1.5 w-4 h-4 rounded-full border-4 border-[var(--bg-app)]",
                           getEventDotColor(event.event_type)
                         )}></div>
-                        <div className="glass-card p-4 rounded-lg bg-black/40 border border-white/5 inline-block min-w-[300px]">
-                          <div className="flex items-center justify-between gap-4 mb-2">
-                            <span className="px-2 py-0.5 rounded bg-white/10 text-xs font-semibold text-gray-200">
+                        <div className="glass-card p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] inline-block min-w-[320px]">
+                          <div className="flex items-center justify-between gap-4 mb-1.5">
+                            <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 text-[10px] font-semibold">
                               {event.event_type}
                             </span>
-                            <span className="text-xs text-gray-500 font-mono">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                               {event.timestamp ? new Date(event.timestamp).toLocaleString() : ''}
                             </span>
                           </div>
-                          <div className="text-sm font-medium text-white mb-1">{event.action_summary}</div>
-                          <div className="text-xs text-gray-500">Actor: {event.actor}</div>
+                          <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">{event.action_summary}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">Actor: {event.actor}</div>
                         </div>
                       </div>
                     ))}
@@ -434,19 +440,19 @@ export default function CaseWorkspace() {
           {activeTab === 'notes' && (
             <div className="space-y-6 max-w-3xl">
               
-              <div className="glass-card p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="glass-card p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
                 <form onSubmit={handleAddNote}>
                   <textarea
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
-                    placeholder="Add a new note or observation..."
-                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#00d4ff]/50 min-h-[100px] resize-y"
+                    placeholder="Add an investigation note, witness testimony reference, or case update..."
+                    className="w-full bg-slate-100 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 min-h-[100px] resize-y"
                   />
                   <div className="flex justify-end mt-3">
                     <button
                       type="submit"
                       disabled={addingNote || !newNote.trim()}
-                      className="bg-[#00d4ff] text-black px-4 py-2 rounded-lg font-semibold hover:bg-[#00d4ff]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-5 py-2 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     >
                       {addingNote ? 'Saving...' : 'Add Note'}
                     </button>
@@ -456,19 +462,19 @@ export default function CaseWorkspace() {
 
               <div className="space-y-4">
                 {notes.length === 0 ? (
-                  <div className="text-center p-8 text-gray-500">No notes yet.</div>
+                  <div className="text-center p-8 text-slate-500">No notes recorded yet.</div>
                 ) : (
                   [...notes].reverse().map((note: any, idx: number) => (
-                    <div key={idx} className="glass-card p-4 rounded-xl bg-white/5 border border-white/10 flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#00d4ff]/20 flex items-center justify-center text-[#00d4ff] font-bold shrink-0">
+                    <div key={idx} className="glass-card p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] flex gap-4">
+                      <div className="w-9 h-9 rounded-lg bg-blue-600/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center font-bold text-xs shrink-0">
                         {note.author ? note.author.charAt(0).toUpperCase() : 'U'}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-baseline justify-between mb-1">
-                          <span className="font-semibold text-sm text-gray-200">{note.author || 'Unknown User'}</span>
-                          <span className="text-xs text-gray-500">{note.timestamp ? new Date(note.timestamp).toLocaleString() : ''}</span>
+                          <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">{note.author || 'Unknown Officer'}</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{note.timestamp ? new Date(note.timestamp).toLocaleString() : ''}</span>
                         </div>
-                        <p className="text-gray-300 text-sm whitespace-pre-wrap">{note.text}</p>
+                        <p className="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-wrap">{note.text}</p>
                       </div>
                     </div>
                   ))

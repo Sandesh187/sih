@@ -30,18 +30,19 @@ export default function WalletInput({ onSubmit, isLoading, initialAddress, initi
 
   return (
     <div className={cn(
-      "glass-card rounded-2xl p-6 transition-all duration-300",
-      isFocused ? "shadow-[0_0_30px_rgba(0,212,255,0.2)] border-accent/40" : ""
+      "glass-card rounded-2xl p-5 md:p-6 transition-all duration-300 border border-[var(--border-color)] bg-[var(--bg-surface)]",
+      isFocused ? "shadow-[0_0_25px_rgba(37,99,235,0.15)] border-blue-500/50" : ""
     )}>
-      <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 relative z-10">
+      <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3.5 relative z-10">
         
+        {/* Address Input */}
         <div className="relative flex-1 group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className={cn("w-5 h-5 transition-colors", isFocused ? "text-accent" : "text-gray-400")} />
+            <Search className={cn("w-5 h-5 transition-colors", isFocused ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500")} />
           </div>
           <input
             type="text"
-            className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all"
+            className="w-full bg-slate-100 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700/80 rounded-xl py-3.5 pl-11 pr-4 text-slate-900 dark:text-slate-50 placeholder-slate-400 dark:placeholder-slate-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
             placeholder={chain === 'tron' ? "Enter Tron address (T...) or TxHash" : "Enter Ethereum address (0x...) or TxHash"}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
@@ -51,30 +52,32 @@ export default function WalletInput({ onSubmit, isLoading, initialAddress, initi
           />
         </div>
 
-        <div className="relative w-full md:w-48">
+        {/* Chain Selector */}
+        <div className="relative w-full md:w-52">
           <select
-            className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-white focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all cursor-pointer"
+            className="w-full appearance-none bg-slate-100 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700/80 rounded-xl py-3.5 pl-4 pr-10 text-slate-900 dark:text-slate-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all cursor-pointer"
             value={chain}
             onChange={(e) => setChain(e.target.value)}
             disabled={isLoading}
           >
-            <option value="ethereum">Ethereum (ETH)</option>
-            <option value="tron">Tron (TRX)</option>
+            <option value="ethereum" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">Ethereum (ETH)</option>
+            <option value="tron" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">Tron (TRX)</option>
           </select>
-          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+          <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+            <ChevronDown className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           </div>
         </div>
 
+        {/* Initiate Trace Button */}
         <button
           type="submit"
           disabled={!address.trim() || isLoading}
-          className="bg-accent/20 hover:bg-accent/30 text-accent border border-accent/50 rounded-xl py-4 px-8 font-semibold transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
+          className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white border border-blue-700 dark:border-blue-500 rounded-xl py-3.5 px-7 font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px] text-sm"
         >
           {isLoading ? (
             <>
-              <Activity className="w-5 h-5 animate-pulse" />
-              Tracing...
+              <Activity className="w-4 h-4 animate-spin" />
+              <span>Tracing...</span>
             </>
           ) : (
             'Initiate Trace'

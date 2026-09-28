@@ -106,6 +106,28 @@ class EvidenceVault:
                 pipe.sadd(evidence_dag_key(case_id), f"{pid}:{evidence_id}")
             await pipe.execute()
 
+        # Dual-write to SQLite database
+        try:
+            from app.persistence.repository import SQLiteRepository
+            await SQLiteRepository.add_evidence_item({
+                "id": evidence_item.id,
+                "case_id": evidence_item.case_id,
+                "trace_id": evidence_item.trace_id,
+                "sequence_number": evidence_item.sequence_number,
+                "tier": evidence_item.tier.value if hasattr(evidence_item.tier, "value") else str(evidence_item.tier),
+                "title": evidence_item.title,
+                "description": evidence_item.description,
+                "payload": evidence_item.payload,
+                "content_hash": evidence_item.content_hash,
+                "chain_hash": evidence_item.chain_hash,
+                "parent_evidence_ids": evidence_item.parent_evidence_ids,
+                "parent_evidence_hashes": evidence_item.parent_evidence_hashes,
+                "created_at": evidence_item.created_at.isoformat() if hasattr(evidence_item.created_at, "isoformat") else str(evidence_item.created_at),
+                "created_by": evidence_item.created_by,
+            })
+        except Exception as exc:
+            logger.warning("Failed to dual-write evidence item to SQLite: %s", exc)
+
         logger.info(
             "Appended evidence %s (Seq %d, Tier %s) for Case %s. ChainHash: %s",
             evidence_id, seq_num, tier.value, case_id, chain_hash[:16]
@@ -116,6 +138,34 @@ class EvidenceVault:
         """Fetch all evidence items for a case in sequential ledger order."""
         ids = await self.redis.lrange(evidence_list_key(case_id), 0, -1)
         if not ids:
+            # Fallback to SQLite
+            try:
+                from app.persistence.repository import SQLiteRepository
+                from app.blockchain.models import EvidenceTier
+                sql_items = await SQLiteRepository.get_case_evidence(case_id)
+                if sql_items:
+                    items: List[EvidenceItem] = []
+                    for si in sql_items:
+                        item = EvidenceItem(
+                            id=si.id,
+                            case_id=si.case_id,
+                            trace_id=si.trace_id,
+                            sequence_number=si.sequence_number,
+                            tier=EvidenceTier(si.tier) if si.tier in EvidenceTier.__members__.values() else EvidenceTier.OBSERVED,
+                            title=si.title,
+                            description=si.description,
+                            payload=si.payload or {},
+                            content_hash=si.content_hash,
+                            chain_hash=si.chain_hash,
+                            parent_evidence_ids=si.parent_evidence_ids or [],
+                            parent_evidence_hashes=si.parent_evidence_hashes or [],
+                            created_at=datetime.fromisoformat(si.created_at) if "T" in str(si.created_at) else datetime.utcnow(),
+                            created_by=si.created_by,
+                        )
+                        items.append(item)
+                    return items
+            except Exception as exc:
+                logger.warning("Error fetching evidence from SQLite fallback: %s", exc)
             return []
 
         clean_ids = [i.decode("utf-8") if isinstance(i, bytes) else str(i) for i in ids]

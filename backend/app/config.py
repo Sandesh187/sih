@@ -24,8 +24,7 @@ class Settings(BaseSettings):
     TRONSCAN_PAGE_SIZE: int = 100
     
     # Database Config
-    # Removed Neo4j and Clickhouse to streamline SIH prototype deployment
-
+    DATABASE_URL: str = "sqlite+aiosqlite:///./app.db"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379"

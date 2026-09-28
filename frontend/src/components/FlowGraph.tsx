@@ -37,18 +37,18 @@ const WalletNode = ({ data }: NodeProps<WalletNodeType>) => {
   const isVasp = data.type === 'vasp';
   const isExchange = data.type === 'exchange';
   
-  let borderColor = 'border-gray-600';
+  let borderColor = 'border-slate-300 dark:border-slate-700';
   let glow = '';
   
   if (isSuspect) {
-    borderColor = 'border-[#ff4444]';
-    glow = 'shadow-[0_0_15px_rgba(255,68,68,0.5)] animate-pulse';
+    borderColor = 'border-red-500';
+    glow = 'shadow-[0_0_15px_rgba(239,68,68,0.35)] animate-pulse';
   } else if (isVasp) {
-    borderColor = 'border-[#00ff88]';
-    glow = 'shadow-[0_0_15px_rgba(0,255,136,0.4)]';
+    borderColor = 'border-emerald-500';
+    glow = 'shadow-[0_0_15px_rgba(16,185,129,0.35)]';
   } else if (isExchange) {
-    borderColor = 'border-[#00d4ff]';
-    glow = 'shadow-[0_0_15px_rgba(0,212,255,0.4)]';
+    borderColor = 'border-blue-500';
+    glow = 'shadow-[0_0_15px_rgba(59,130,246,0.35)]';
   }
 
   const truncLabel = typeof data.label === 'string' && data.label.length > 15
@@ -56,24 +56,29 @@ const WalletNode = ({ data }: NodeProps<WalletNodeType>) => {
     : data.label;
 
   return (
-    <div className={`glass-card p-3 rounded-xl border ${borderColor} ${glow} min-w-[120px] text-center bg-[#12121a]/90 backdrop-blur`}>
-      <Handle type="target" position={Position.Left} className="w-2 h-2 !bg-gray-400" />
+    <div className={`glass-card p-3 rounded-xl border ${borderColor} ${glow} min-w-[125px] text-center bg-white/95 dark:bg-[#12121a]/95 backdrop-blur shadow-sm`}>
+      <Handle type="target" position={Position.Left} className="w-2 h-2 !bg-slate-400" />
       
-      <div className="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold">{data.type}</div>
-      <div className="font-mono text-sm text-white font-medium">{truncLabel}</div>
+      <div className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider font-bold">{data.type}</div>
+      <div className="font-mono text-xs text-slate-900 dark:text-slate-100 font-semibold">{truncLabel}</div>
       {data.riskScore !== undefined && (
-        <div className={`mt-2 text-xs rounded-full px-2 py-0.5 inline-block ${data.riskScore > 75 ? 'bg-[#ff4444]/20 text-[#ff4444]' : data.riskScore > 40 ? 'bg-[#ffaa00]/20 text-[#ffaa00]' : 'bg-[#00ff88]/20 text-[#00ff88]'}`}>
+        <div className={`mt-2 text-[10px] rounded-full px-2 py-0.5 inline-block font-mono font-bold ${
+          data.riskScore > 75 
+            ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-800' 
+            : data.riskScore > 40 
+            ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800' 
+            : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800'
+        }`}>
           Risk: {data.riskScore}
         </div>
       )}
       
-      <Handle type="source" position={Position.Right} className="w-2 h-2 !bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="w-2 h-2 !bg-slate-400" />
     </div>
   );
 };
 
 const CustomEdge = ({
-  id,
   sourceX,
   sourceY,
   targetX,
@@ -101,16 +106,13 @@ const CustomEdge = ({
           style={{
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            background: 'rgba(18, 18, 26, 0.8)',
-            padding: '2px 6px',
-            borderRadius: '4px',
+            padding: '2px 8px',
+            borderRadius: '6px',
             fontSize: 10,
-            color: '#00d4ff',
-            fontWeight: 500,
-            border: '1px solid rgba(0, 212, 255, 0.2)',
+            fontWeight: 600,
             pointerEvents: 'all',
           }}
-          className="nodrag nopan"
+          className="nodrag nopan bg-slate-100 dark:bg-[#12121a] text-blue-600 dark:text-blue-400 border border-slate-300 dark:border-blue-500/30 shadow-sm font-mono"
         >
           {data?.amount} {data?.currency}
         </div>
@@ -150,7 +152,7 @@ export default function FlowGraph({ data, onNodeClick, highlightedPath = [] }: F
     });
 
     let queue = data.nodes.filter(n => inDegree[n.data.id] === 0).map(n => n.data.id);
-    if (queue.length === 0 && data.nodes.length > 0) queue.push(data.nodes[0].data.id); // fallback for cycles
+    if (queue.length === 0 && data.nodes.length > 0) queue.push(data.nodes[0].data.id);
 
     queue.forEach(id => nodeDepths[id] = 0);
     
@@ -179,30 +181,33 @@ export default function FlowGraph({ data, onNodeClick, highlightedPath = [] }: F
       return {
         id: n.data.id,
         type: 'wallet',
-        position: { x: d * 300, y: countAtDepth * 150 },
-        data: { ...n.data, isHighlighted },
+        position: { x: d * 280, y: countAtDepth * 140 },
+        data: n.data,
+        style: isHighlighted ? { zIndex: 10 } : {},
       };
     });
 
     const flowEdges: Edge[] = data.edges.map(e => {
-      const isHighlighted = highlightedPath.includes(e.data.source) && highlightedPath.includes(e.data.target);
+      const isHighlighted = 
+        highlightedPath.includes(e.data.source) && 
+        highlightedPath.includes(e.data.target);
+
       return {
         id: `${e.data.source}-${e.data.target}`,
         source: e.data.source,
         target: e.data.target,
         type: 'custom',
-        animated: true,
-        data: { amount: e.data.amount, currency: e.data.currency },
+        animated: isHighlighted,
+        data: e.data,
         style: {
-          stroke: isHighlighted ? '#00d4ff' : '#4b5563',
+          stroke: isHighlighted ? '#2563EB' : '#94A3B8',
           strokeWidth: isHighlighted ? 3 : 1.5,
-          opacity: 0.8
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          width: 20,
-          height: 20,
-          color: isHighlighted ? '#00d4ff' : '#4b5563',
+          width: 18,
+          height: 18,
+          color: isHighlighted ? '#2563EB' : '#94A3B8',
         },
       };
     });
@@ -236,7 +241,7 @@ export default function FlowGraph({ data, onNodeClick, highlightedPath = [] }: F
   }, [onNodeClick]);
 
   return (
-    <div className="w-full h-full min-h-[500px] rounded-xl overflow-hidden glass-card border border-white/10 relative">
+    <div className="w-full h-full min-h-[500px] rounded-2xl overflow-hidden glass-card border border-[var(--border-color)] bg-[var(--bg-app)] relative shadow-sm">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -246,22 +251,22 @@ export default function FlowGraph({ data, onNodeClick, highlightedPath = [] }: F
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
-        className="bg-[#0a0a0f]"
+        className="bg-transparent"
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background color="rgba(255, 255, 255, 0.05)" gap={16} size={1} />
-        <Controls className="!bg-[#12121a] !border-white/10 !fill-white" />
+        <Background color="rgba(148, 163, 184, 0.15)" gap={16} size={1} />
+        <Controls className="!bg-white dark:!bg-[#12121a] !border-[var(--border-color)] !fill-slate-700 dark:!fill-slate-200 !shadow-sm" />
         <MiniMap 
           nodeColor={(n) => {
             const data = n.data as any;
-            if (data.type === 'suspect') return '#ff4444';
-            if (data.type === 'vasp') return '#00ff88';
-            if (data.type === 'exchange') return '#00d4ff';
-            return '#4b5563';
+            if (data.type === 'suspect') return '#EF4444';
+            if (data.type === 'vasp') return '#10B981';
+            if (data.type === 'exchange') return '#2563EB';
+            return '#94A3B8';
           }}
-          maskColor="rgba(10, 10, 15, 0.8)"
-          className="!bg-[#12121a] !border-white/10 rounded-lg overflow-hidden" 
+          maskColor="rgba(15, 23, 42, 0.4)"
+          className="!bg-white dark:!bg-[#12121a] !border-[var(--border-color)] rounded-xl overflow-hidden !shadow-md" 
         />
       </ReactFlow>
     </div>

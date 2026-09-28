@@ -17,12 +17,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body className={inter.className}>
         <Providers>
-          <div className="flex h-screen overflow-hidden">
+          <div className="flex h-screen overflow-hidden bg-[var(--bg-app)] text-[var(--text-main)]">
             <Sidebar />
-            <main className="flex-1 overflow-y-auto bg-black/20 p-4 md:p-8">
+            <main className="flex-1 overflow-y-auto bg-[var(--bg-app)] text-[var(--text-main)] p-4 md:p-8 transition-colors">
               {children}
             </main>
           </div>

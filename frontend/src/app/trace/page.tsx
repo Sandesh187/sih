@@ -316,14 +316,14 @@ function TracePageContent() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="max-w-3xl mx-auto mb-8 bg-[#ff4444]/10 border border-[#ff4444]/30 rounded-xl p-4 flex items-start gap-3 text-[#ff4444]"
+            className="max-w-3xl mx-auto mb-8 bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/30 dark:border-red-800/50 dark:text-red-400 rounded-xl p-4 flex items-start gap-3 shadow-sm"
           >
-            <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+            <AlertCircle className="w-5 h-5 mt-0.5 shrink-0 text-red-600 dark:text-red-400" />
             <div className="flex-1">
               <h3 className="font-semibold mb-1">Trace Error</h3>
               <p className="text-sm opacity-90">{error}</p>
             </div>
-            <button onClick={() => setError(null)} className="p-1 hover:bg-[#ff4444]/20 rounded">
+            <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors">
               <RefreshCw className="w-4 h-4" />
             </button>
           </motion.div>
@@ -337,13 +337,13 @@ function TracePageContent() {
             className="space-y-6"
           >
             <div className="flex justify-between items-center px-4">
-              <div className="h-8 w-48 bg-white/5 rounded-lg animate-pulse" />
-              <div className="h-8 w-8 bg-white/5 rounded-lg animate-pulse" />
+              <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse" />
+              <div className="h-8 w-8 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse" />
             </div>
-            <div className="h-[500px] w-full glass-card rounded-xl animate-pulse bg-white/5" />
+            <div className="h-[500px] w-full glass-card rounded-xl animate-pulse bg-slate-100/50 dark:bg-slate-800/40 border border-[var(--border-color)]" />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 h-[300px] glass-card rounded-xl animate-pulse bg-white/5" />
-              <div className="h-[300px] glass-card rounded-xl animate-pulse bg-white/5" />
+              <div className="lg:col-span-2 h-[300px] glass-card rounded-xl animate-pulse bg-slate-100/50 dark:bg-slate-800/40 border border-[var(--border-color)]" />
+              <div className="h-[300px] glass-card rounded-xl animate-pulse bg-slate-100/50 dark:bg-slate-800/40 border border-[var(--border-color)]" />
             </div>
           </motion.div>
         )}
@@ -363,7 +363,7 @@ function TracePageContent() {
             />
 
             {/* Controls Row */}
-            <div className="flex flex-wrap items-center justify-between gap-4 glass-card p-4 rounded-xl border border-white/5">
+            <div className="flex flex-wrap items-center justify-between gap-4 glass-card p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] shadow-sm">
               <TraceDepthSlider
                 value={traceDepth}
                 onChange={setTraceDepth}
@@ -380,7 +380,11 @@ function TracePageContent() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setHideDust(!hideDust)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-300 text-sm font-medium ${hideDust ? 'bg-[#00d4ff]/10 border-[#00d4ff]/50 text-[#00d4ff]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border transition-all duration-200 text-xs font-semibold ${
+                    hideDust 
+                      ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300 shadow-sm' 
+                      : 'bg-slate-100 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
                   title="Hide transactions < 0.01 ETH or $10"
                 >
                   <Filter className={`w-4 h-4 ${hideDust ? 'fill-current' : ''}`} />
@@ -389,10 +393,14 @@ function TracePageContent() {
 
                 <button 
                   onClick={toggleBookmark}
-                  className={`p-2.5 rounded-lg border transition-all duration-300 ${isBookmarked ? 'bg-[#ffaa00]/10 border-[#ffaa00]/50 text-[#ffaa00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
+                  className={`p-2.5 rounded-xl border transition-all duration-200 ${
+                    isBookmarked 
+                      ? 'bg-amber-50 border-amber-200 text-amber-600 dark:bg-amber-950/50 dark:border-amber-800 dark:text-amber-400 shadow-sm' 
+                      : 'bg-slate-100 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
                   title="Bookmark this trace"
                 >
-                  <Star className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
+                  <Star className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
                 </button>
               </div>
             </div>
