@@ -12,6 +12,7 @@ frontend/.next/
 dist/
 build/
 out/
+*.tsbuildinfo
 
 # Environment Variables & Secrets
 .env

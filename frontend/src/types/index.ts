@@ -7,6 +7,7 @@ export interface TraceResult {
   riskFactors: RiskFactor[];
   path: TracePathStep[]; 
 }
+
 export interface TracePathStep { 
   from: string; 
   to: string; 
@@ -32,6 +33,7 @@ export interface GraphData {
       target: string;
       amount: number;
       currency: string;
+      txHash?: string;
     };
   }>;
 }
@@ -90,4 +92,114 @@ export interface RiskFactor {
   score: number;
   weight: number;
   description: string;
+}
+
+// ---------------------------------------------------------------------------
+// Enterprise Case Management Types (Section 94 BNSS & Statutory Compliance)
+// ---------------------------------------------------------------------------
+
+export type CaseStatus = 'draft' | 'active' | 'under_review' | 'closed';
+
+export interface CaseNote {
+  id: string;
+  author: string;
+  note: string;
+  timestamp: string;
+}
+
+export interface Case {
+  id: string;
+  fir_number: string;
+  complainant_name: string;
+  police_station: string;
+  loss_amount_inr: number;
+  loss_amount_crypto: number;
+  crypto_symbol: string;
+  root_suspect_address: string;
+  chain: string;
+  status: CaseStatus;
+  traces: string[];
+  notes: CaseNote[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CaseCreate {
+  fir_number: string;
+  complainant_name: string;
+  police_station?: string;
+  loss_amount_inr?: number;
+  loss_amount_crypto?: number;
+  crypto_symbol?: string;
+  root_suspect_address: string;
+  chain: string;
+}
+
+// ---------------------------------------------------------------------------
+// Cryptographic Evidence DAG & Hash Chaining Types (Section 63 BSA)
+// ---------------------------------------------------------------------------
+
+export type EvidenceTier = 'OBSERVED' | 'DERIVED' | 'INFERRED' | 'HUMAN_ACTION';
+
+export interface EvidenceItem {
+  id: string;
+  case_id: string;
+  trace_id?: string | null;
+  sequence_number: number;
+  tier: EvidenceTier;
+  title: string;
+  description: string;
+  payload: Record<string, any>;
+  content_hash: string;
+  chain_hash: string;
+  parent_evidence_ids: string[];
+  parent_evidence_hashes: string[];
+  created_at: string;
+  created_by: string;
+}
+
+export interface IntegrityVerificationResult {
+  case_id: string;
+  is_valid: boolean;
+  total_records: number;
+  genesis_hash: string;
+  latest_chain_hash: string;
+  corrupted_sequence_number: number | null;
+  verification_timestamp: string;
+  audit_notes: string;
+}
+
+export interface AuditEvent {
+  id: string;
+  case_id: string;
+  actor_id: string;
+  actor_role: string;
+  event_type: string;
+  action_summary: string;
+  target_entity?: string | null;
+  metadata: Record<string, any>;
+  timestamp: string;
+  client_ip?: string;
+}
+
+export interface AuditTrailResponse {
+  case_id: string;
+  total_events: number;
+  events: AuditEvent[];
+}
+
+export interface Finding {
+  id: string;
+  case_id: string;
+  trace_id?: string | null;
+  type: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  affected_addresses: string[];
+  evidence_ids: string[];
+  status: 'new' | 'reviewed' | 'escalated' | 'dismissed';
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
 }

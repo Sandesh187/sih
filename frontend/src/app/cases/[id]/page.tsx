@@ -89,7 +89,7 @@ export default function CaseWorkspace() {
   const handleUpdateStatus = async (newStatus: string) => {
     if (!caseData) return;
     try {
-      const updated = await api.updateCase(id, { status: newStatus });
+      const updated = await api.updateCase(id, { status: newStatus as any });
       setCaseData({ ...caseData, status: newStatus as any });
     } catch (err) {
       console.error('Failed to update status', err);
@@ -197,7 +197,7 @@ export default function CaseWorkspace() {
               Case Workspace
               <span className="text-[#00d4ff] text-xl font-mono">#{id}</span>
             </h1>
-            <p className="text-gray-400 mt-1">{caseData.title}</p>
+            <p className="text-gray-400 mt-1">{caseData.fir_number} • {caseData.complainant_name}</p>
           </div>
         </div>
 
@@ -248,9 +248,10 @@ export default function CaseWorkspace() {
                     onChange={(e) => handleUpdateStatus(e.target.value)}
                     className={cn("bg-transparent outline-none font-semibold px-2 py-1 rounded text-sm -ml-2", getStatusColor(caseData.status))}
                   >
-                    <option value="OPEN" className="bg-gray-900 text-white">OPEN</option>
-                    <option value="IN_PROGRESS" className="bg-gray-900 text-white">IN PROGRESS</option>
-                    <option value="CLOSED" className="bg-gray-900 text-white">CLOSED</option>
+                    <option value="active" className="bg-gray-900 text-white">ACTIVE</option>
+                    <option value="under_review" className="bg-gray-900 text-white">UNDER REVIEW</option>
+                    <option value="draft" className="bg-gray-900 text-white">DRAFT</option>
+                    <option value="closed" className="bg-gray-900 text-white">CLOSED</option>
                   </select>
                 </div>
                 <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
@@ -259,7 +260,7 @@ export default function CaseWorkspace() {
                 </div>
                 <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10 lg:col-span-2">
                   <div className="text-sm text-gray-500 mb-1">Suspect Address</div>
-                  <div className="font-mono text-[#00d4ff] text-sm break-all">{caseData.suspect_address || 'N/A'}</div>
+                  <div className="font-mono text-[#00d4ff] text-sm break-all">{caseData.root_suspect_address || 'N/A'}</div>
                 </div>
                 <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
                   <div className="text-sm text-gray-500 mb-1">Chain</div>
@@ -267,11 +268,11 @@ export default function CaseWorkspace() {
                 </div>
                 <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
                   <div className="text-sm text-gray-500 mb-1">Loss INR</div>
-                  <div className="font-semibold text-lg text-[#ffaa00]">₹{caseData.loss_inr?.toLocaleString() || '0'}</div>
+                  <div className="font-semibold text-lg text-[#ffaa00]">₹{caseData.loss_amount_inr?.toLocaleString() || '0'}</div>
                 </div>
                 <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
                   <div className="text-sm text-gray-500 mb-1">Loss Crypto</div>
-                  <div className="font-semibold text-lg">{caseData.loss_crypto} {caseData.symbol}</div>
+                  <div className="font-semibold text-lg">{caseData.loss_amount_crypto} {caseData.crypto_symbol}</div>
                 </div>
                 <div className="glass-card p-6 rounded-xl bg-white/5 border border-white/10">
                   <div className="text-sm text-gray-500 mb-1">Created</div>
@@ -374,7 +375,7 @@ export default function CaseWorkspace() {
                             <td className="p-4 text-gray-400 max-w-xs truncate">{ev.description}</td>
                             <td className="p-4 font-mono text-xs text-[#00d4ff]/80">{truncateHash(ev.content_hash)}</td>
                             <td className="p-4 font-mono text-xs text-gray-500">{truncateHash(ev.chain_hash)}</td>
-                            <td className="p-4 text-gray-500 whitespace-nowrap">{ev.timestamp ? new Date(ev.timestamp).toLocaleString() : ''}</td>
+                            <td className="p-4 text-gray-500 whitespace-nowrap">{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</td>
                           </tr>
                         ))
                       )}

@@ -1,12 +1,13 @@
 "use client";
 
 import Link from 'next/link';
-import { LayoutDashboard, Route, Network, FileText, ShieldAlert, Bell } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Route, Network, FileText, ShieldAlert, Bell } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Cases', href: '/cases', icon: Briefcase },
   { name: 'Trace Funds', href: '/trace', icon: Route },
   { name: 'Clusters', href: '/clusters', icon: Network },
   { name: 'Reports', href: '/reports', icon: FileText },
@@ -28,7 +29,7 @@ export default function Sidebar() {
 
       <nav className="flex-1 px-4 space-y-2 mt-4">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(`${item.href}`));
           const Icon = item.icon;
           return (
             <Link

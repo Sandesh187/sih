@@ -99,20 +99,72 @@ function TracePageContent() {
     setIsBookmarked(!isBookmarked);
   };
 
+  const getMaxHops = () => {
+    if (!result) return 1;
+    if (result.traceResult.path && result.traceResult.path.length > 0) {
+      return result.traceResult.path.length;
+    }
+    // Fallback: calculate max BFS depth in graphData
+    const sourceLower = result.traceResult.sourceAddress.toLowerCase();
+    const depths: Record<string, number> = { [sourceLower]: 0 };
+    const queue = [sourceLower];
+    let maxD = 1;
+    while (queue.length > 0) {
+      const u = queue.shift()!;
+      const d = depths[u];
+      result.graphData.edges.forEach(e => {
+        const s = e.data.source.toLowerCase();
+        const t = e.data.target.toLowerCase();
+        if (s === u && depths[t] === undefined) {
+          depths[t] = d + 1;
+          if (d + 1 > maxD) maxD = d + 1;
+          queue.push(t);
+        }
+      });
+    }
+    return Math.max(maxD, 1);
+  };
+
   const getVisibleGraphData = () => {
     if (!result) return { nodes: [], edges: [] };
     
     const path = result.traceResult.path;
-    let baseEdges = result.graphData.edges;
-    let baseNodes = result.graphData.nodes;
+    let baseEdges = [...result.graphData.edges];
+    let baseNodes = [...result.graphData.nodes];
+    const maxHops = getMaxHops();
 
-    if (timeIndex !== -1 && timeIndex < path.length) {
+    // If timeIndex is active (not -1 and not all hops), progressively filter nodes & edges
+    if (timeIndex !== -1 && timeIndex < maxHops) {
       const sourceLower = result.traceResult.sourceAddress.toLowerCase();
       const visibleAddresses = new Set<string>([sourceLower]);
 
-      for (let i = 0; i < timeIndex; i++) {
-        visibleAddresses.add(path[i].from.toLowerCase());
-        visibleAddresses.add(path[i].to.toLowerCase());
+      if (path && path.length > 0) {
+        // Step 0: Only suspect. Step 1: Hop 1. Step 2: Hop 2...
+        for (let i = 0; i < timeIndex; i++) {
+          if (path[i]) {
+            visibleAddresses.add(path[i].from.toLowerCase());
+            visibleAddresses.add(path[i].to.toLowerCase());
+          }
+        }
+      } else {
+        // Fallback BFS depth filtering
+        const depths: Record<string, number> = { [sourceLower]: 0 };
+        const queue = [sourceLower];
+        while (queue.length > 0) {
+          const u = queue.shift()!;
+          const d = depths[u];
+          result.graphData.edges.forEach(e => {
+            const s = e.data.source.toLowerCase();
+            const t = e.data.target.toLowerCase();
+            if (s === u && depths[t] === undefined) {
+              depths[t] = d + 1;
+              queue.push(t);
+            }
+          });
+        }
+        Object.entries(depths).forEach(([addr, d]) => {
+          if (d <= timeIndex) visibleAddresses.add(addr);
+        });
       }
 
       baseNodes = baseNodes.filter(n => visibleAddresses.has(n.data.id.toLowerCase()));
@@ -124,13 +176,11 @@ function TracePageContent() {
 
     // Apply Smart Noise Pruning (Dust Filter)
     if (hideDust) {
-      // Threshold: 0.01 for ETH/native, or 10 for USDT/others (simplified heuristic)
       const isEth = chain === 'ethereum';
       const dustThreshold = isEth ? 0.01 : 10;
       
       baseEdges = baseEdges.filter(e => e.data.amount >= dustThreshold);
 
-      // Recompute connected nodes so disconnected "dust" nodes vanish (except the main suspect)
       const connectedNodes = new Set<string>([result.traceResult.sourceAddress.toLowerCase()]);
       baseEdges.forEach(e => {
         connectedNodes.add(e.data.source.toLowerCase());
@@ -223,7 +273,7 @@ function TracePageContent() {
               
               <TimeMachineSlider 
                 value={timeIndex}
-                max={result.traceResult.path.length}
+                max={getMaxHops()}
                 onChange={setTimeIndex}
               />
 

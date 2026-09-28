@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from redis.asyncio import Redis
 
 from app.config import settings
-from app.api.routes import trace, cluster, graph, report, cases, evidence, demo
+from app.api.routes import trace, cluster, graph, report, cases, evidence, demo, findings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -67,6 +67,7 @@ app.include_router(report.router, prefix="/api/v1/report", tags=["Report"], depe
 app.include_router(cases.router, prefix="/api/v1", tags=["Cases"], dependencies=protected_dependencies)
 app.include_router(evidence.router, prefix="/api/v1", tags=["Evidence"], dependencies=protected_dependencies)
 app.include_router(demo.router, prefix="/api/v1", tags=["Demo"], dependencies=protected_dependencies)
+app.include_router(findings.router, prefix="/api/v1/findings", tags=["Findings"], dependencies=protected_dependencies)
 
 @app.get("/health", tags=["Health"])
 async def health_check():

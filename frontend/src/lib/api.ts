@@ -1,4 +1,16 @@
-import { GraphData, InvestigationReport, TraceResult } from '@/types';
+import {
+  GraphData,
+  InvestigationReport,
+  TraceResult,
+  Case,
+  CaseCreate,
+  CaseNote,
+  EvidenceItem,
+  IntegrityVerificationResult,
+  AuditTrailResponse,
+  Finding,
+  RiskFactor,
+} from '@/types';
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1').replace(/\/$/, '');
 const POLL_INTERVAL_MS = 1_000;
@@ -58,22 +70,29 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       ...init,
-      cache: 'no-store',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'X-API-Key': apiKey,
-        ...init?.headers 
+        ...init?.headers,
       },
     });
-  } catch {
-    throw new Error(`Cannot reach the tracing API at ${BASE_URL}. Start the backend or set NEXT_PUBLIC_API_URL.`);
+  } catch (err: any) {
+    throw new Error(`Failed to reach forensic API server at ${BASE_URL}. Ensure backend is running.`);
   }
 
   if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { detail?: string } | null;
-    throw new Error(payload?.detail ?? `Tracing API request failed (${response.status}).`);
+    const errorBody = await response.text();
+    let message = `API request failed with status ${response.status}`;
+    try {
+      const parsed = JSON.parse(errorBody);
+      message = parsed.detail || parsed.message || message;
+    } catch {
+      if (errorBody) message = errorBody;
+    }
+    throw new Error(message);
   }
-  return response.json() as Promise<T>;
+
+  return response.json();
 }
 
 function isProcessing(result: TraceStatus): result is { status: 'processing' } {
@@ -81,6 +100,27 @@ function isProcessing(result: TraceStatus): result is { status: 'processing' } {
 }
 
 function toTraceResult(result: BackendTraceResult): TraceResult {
+  const riskFactors: RiskFactor[] = [
+    ...(result.gnn_prediction ? [{
+      name: 'GNN Behavioral Classification',
+      score: Math.round((result.gnn_prediction.confidence ?? 0.8) * 100),
+      weight: 35,
+      description: result.gnn_prediction.explanation || `Classified as ${result.gnn_prediction.predicted_class} by GraphSAGE`,
+    }] : []),
+    ...(result.vasp ? [{
+      name: 'VASP Sweep Consolidation',
+      score: Math.round(result.vasp.confidence * 100),
+      weight: 35,
+      description: `Terminal destination identified as ${result.vasp.vasp_name}`,
+    }] : []),
+    {
+      name: 'Hop-Decayed Proximity Risk',
+      score: Math.round(result.risk_score ?? 45),
+      weight: 30,
+      description: 'Exponential decay factor applied across all intermediate hops from suspect',
+    }
+  ];
+
   return {
     traceId: result.trace_id,
     sourceAddress: result.suspect_address,
@@ -90,11 +130,8 @@ function toTraceResult(result: BackendTraceResult): TraceResult {
       type: 'Known VASP hot-wallet attribution',
       confidence: result.vasp.confidence,
     } : null,
-    // Risk score is now computed by the backend GNN model
     riskScore: result.risk_score ?? null,
-    riskFactors: result.gnn_prediction?.predicted_class 
-      ? [`GNN classified as: ${result.gnn_prediction.predicted_class}`] 
-      : [],
+    riskFactors,
     path: result.path.map((transaction) => ({
       from: transaction.from_address,
       to: transaction.to_address ?? 'Unknown recipient',
@@ -156,6 +193,9 @@ function toInvestigationReport(report: BackendInvestigationReport): Investigatio
 }
 
 export const api = {
+  // -------------------------------------------------------------------------
+  // Core Tracing API
+  // -------------------------------------------------------------------------
   async traceWallet(address: string, chain: string, maxDepth = 5): Promise<{ traceResult: TraceResult; graphData: GraphData }> {
     const submission = await request<{ trace_id: string }>('/trace/', {
       method: 'POST',
@@ -205,5 +245,120 @@ export const api = {
   async getRecentTraces(): Promise<any[]> {
     const data = await request<{traces: any[]}>('/trace/recent');
     return data.traces;
-  }
+  },
+
+  // -------------------------------------------------------------------------
+  // Case Management API (Section 94 BNSS)
+  // -------------------------------------------------------------------------
+  async getCases(status?: string): Promise<Case[]> {
+    const query = status ? `?status=${status}` : '';
+    return request<Case[]>(`/cases/${query}`);
+  },
+
+  async getCase(caseId: string): Promise<Case> {
+    return request<Case>(`/cases/${encodeURIComponent(caseId)}`);
+  },
+
+  async createCase(payload: CaseCreate): Promise<Case> {
+    return request<Case>('/cases/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateCase(caseId: string, payload: Partial<Case>): Promise<Case> {
+    return request<Case>(`/cases/${encodeURIComponent(caseId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async addCaseNote(caseId: string, note: string, author = 'Investigating Officer'): Promise<CaseNote> {
+    return request<CaseNote>(
+      `/cases/${encodeURIComponent(caseId)}/notes?note_text=${encodeURIComponent(note)}&author=${encodeURIComponent(author)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async getCaseAudit(caseId: string): Promise<AuditTrailResponse> {
+    return request<AuditTrailResponse>(`/cases/${encodeURIComponent(caseId)}/audit`);
+  },
+
+  // -------------------------------------------------------------------------
+  // Evidence Vault & Integrity API (Section 63 BSA)
+  // -------------------------------------------------------------------------
+  async getCaseEvidence(caseId: string): Promise<EvidenceItem[]> {
+    return request<EvidenceItem[]>(`/cases/${encodeURIComponent(caseId)}/evidence/`);
+  },
+
+  async verifyCaseIntegrity(caseId: string): Promise<IntegrityVerificationResult> {
+    return request<IntegrityVerificationResult>(`/cases/${encodeURIComponent(caseId)}/evidence/verify-integrity`);
+  },
+
+  // -------------------------------------------------------------------------
+  // Forensic Findings API
+  // -------------------------------------------------------------------------
+  async getFindings(caseId?: string): Promise<Finding[]> {
+    const query = caseId ? `?case_id=${encodeURIComponent(caseId)}` : '';
+    return request<Finding[]>(`/findings${query}`);
+  },
+
+  // -------------------------------------------------------------------------
+  // PDF Report Compilation & Download API (Non-Blocking)
+  // -------------------------------------------------------------------------
+  async downloadBNSSNotice(caseId: string, candidateAddress?: string, vaspName = 'Binance'): Promise<Blob> {
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY || 'dev_secret_key_123';
+    let url = `${BASE_URL}/cases/${encodeURIComponent(caseId)}/reports/bnss94?vasp_name=${encodeURIComponent(vaspName)}`;
+    if (candidateAddress) {
+      url += `&candidate_address=${encodeURIComponent(candidateAddress)}`;
+    }
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-API-Key': apiKey },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to generate Section 94 BNSS Notice: ${response.statusText}`);
+    }
+    return response.blob();
+  },
+
+  async downloadBSADossier(caseId: string, candidateAddress?: string, vaspName = 'Binance'): Promise<Blob> {
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY || 'dev_secret_key_123';
+    let url = `${BASE_URL}/cases/${encodeURIComponent(caseId)}/reports/dossier?vasp_name=${encodeURIComponent(vaspName)}`;
+    if (candidateAddress) {
+      url += `&candidate_address=${encodeURIComponent(candidateAddress)}`;
+    }
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-API-Key': apiKey },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to generate Section 63 BSA Dossier: ${response.statusText}`);
+    }
+    return response.blob();
+  },
+
+  // Aliases for component compatibility
+  async downloadBnss94Pdf(caseId: string, candidateAddress?: string, vaspName = 'Binance'): Promise<Blob> {
+    return this.downloadBNSSNotice(caseId, candidateAddress, vaspName);
+  },
+
+  async downloadBsa63Pdf(caseId: string, candidateAddress?: string, vaspName = 'Binance'): Promise<Blob> {
+    return this.downloadBSADossier(caseId, candidateAddress, vaspName);
+  },
+
+  async verifyEvidenceIntegrity(caseId: string): Promise<IntegrityVerificationResult> {
+    return this.verifyCaseIntegrity(caseId);
+  },
+
+  // -------------------------------------------------------------------------
+  // Canonical Demo Scenario Seeder
+  // -------------------------------------------------------------------------
+  async seedDemoScenario(): Promise<any> {
+    return request<any>('/demo/seed', { method: 'POST' });
+  },
+
+  async getDemoStatus(): Promise<{ seeded: boolean; case_id?: string; fir_number?: string }> {
+    return request<{ seeded: boolean; case_id?: string; fir_number?: string }>('/demo/status');
+  },
 };
