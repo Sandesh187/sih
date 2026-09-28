@@ -116,17 +116,25 @@ function TracePageContent() {
     }
   };
 
-  // Auto-load trace when navigated with ?id= or ?address=, or auto-load verified demo case immediately
+  const lastLoadedParamRef = React.useRef<string | null>(null);
+
+  // Auto-load trace when navigated with ?id= or ?address=
   useEffect(() => {
-    if (traceIdFromUrl && !result && !loading) {
+    const currentKey = `${traceIdFromUrl || ''}_${addressFromUrl || ''}_${chainFromUrl || ''}`;
+    if (!traceIdFromUrl && !addressFromUrl) {
+      return;
+    }
+    if (currentKey === lastLoadedParamRef.current) return;
+    
+    if (traceIdFromUrl) {
+      lastLoadedParamRef.current = currentKey;
       loadExistingTrace(traceIdFromUrl);
-    } else if (addressFromUrl && !result && !loading) {
+    } else if (addressFromUrl) {
+      lastLoadedParamRef.current = currentKey;
       const selectedChain = chainFromUrl || 'ethereum';
       handleTrace(addressFromUrl, selectedChain);
-    } else if (!traceIdFromUrl && !addressFromUrl && !result && !loading) {
-      handleTrace('0x9d81f2ab72a38a7c29671f654b9d3753b708b761', 'ethereum');
     }
-  }, [traceIdFromUrl, addressFromUrl]);
+  }, [traceIdFromUrl, addressFromUrl, chainFromUrl]);
 
   const loadExistingTrace = async (traceId: string) => {
     setLoading(true);

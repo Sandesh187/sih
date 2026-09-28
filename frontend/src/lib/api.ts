@@ -161,13 +161,13 @@ function toGraphData(graph: BackendGraph, trace: TraceResult): GraphData {
         return {
           data: {
             id,
-            label: data.label ?? id,
+            label: data.label ?? (normalizedId === suspectAddress ? `Suspect (${id.slice(0, 6)}...${id.slice(-4)})` : `${id.slice(0, 6)}...${id.slice(-4)}`),
             type: (data as any).type || (normalizedId === suspectAddress
               ? 'suspect'
               : normalizedId === vaspAddress
                 ? 'vasp'
                 : 'intermediate'),
-            riskScore: (data as any).riskScore,
+            riskScore: (data as any).riskScore ?? (normalizedId === suspectAddress ? 85 : 40),
           },
         };
       }),
@@ -175,9 +175,9 @@ function toGraphData(graph: BackendGraph, trace: TraceResult): GraphData {
         data: {
           source: data.source,
           target: data.target,
-          amount: data.weight,
-          currency: data.asset,
-          txHash: (data as any).txHash,
+          amount: (data as any).amount ?? data.weight ?? 0,
+          currency: (data as any).currency ?? data.asset ?? 'ETH',
+          txHash: (data as any).txHash ?? '',
         },
       })),
     };
@@ -235,7 +235,20 @@ function toGraphData(graph: BackendGraph, trace: TraceResult): GraphData {
     };
   }
 
-  return CANONICAL_DEMO_TRACE.graphData;
+  // Isolated / Dormant single wallet
+  return {
+    nodes: [
+      {
+        data: {
+          id: trace.sourceAddress,
+          label: `Target (${trace.sourceAddress.slice(0, 6)}...${trace.sourceAddress.slice(-4)})`,
+          type: 'suspect',
+          riskScore: trace.riskScore ?? 20,
+        },
+      },
+    ],
+    edges: [],
+  };
 }
 
 function toInvestigationReport(report: BackendInvestigationReport): InvestigationReport {

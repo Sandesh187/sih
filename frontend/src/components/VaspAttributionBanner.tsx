@@ -27,15 +27,62 @@ export default function VaspAttributionBanner({
   const [copied, setCopied] = useState(false);
   const identifiedVasp = traceResult.identifiedVasp;
 
-  if (!identifiedVasp) return null;
-
-  const vaspName = identifiedVasp.name || 'Binance';
-  const confidencePct = Math.round((identifiedVasp.confidence ?? 0.94) * 100);
-
   // Target deposit address is the last node in the trace path or the suspect
   const targetAddress = traceResult.path.length > 0 
     ? traceResult.path[traceResult.path.length - 1].to 
     : traceResult.sourceAddress;
+
+  const vaspName = identifiedVasp?.name || 'Binance';
+  const confidencePct = Math.round((identifiedVasp?.confidence ?? 0.94) * 100);
+
+  if (!identifiedVasp) {
+    return (
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 p-5 shadow-sm backdrop-blur-md mb-6 relative overflow-hidden transition-colors">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 relative z-10">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="p-2 rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase font-extrabold tracking-wider text-slate-500 dark:text-slate-400">
+                    Terminal Flow Attribution
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    Non-Custodial / Intermediary
+                  </span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5">
+                  PRIVATE EOA / ON-CHAIN INTERMEDIARY
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-gray-300 pt-1 flex-wrap">
+              <span className="text-slate-500 dark:text-gray-400">Current Holding / Leaf Node:</span>
+              <span className="font-mono text-blue-600 dark:text-blue-400 bg-slate-100 dark:bg-black/40 px-2 py-0.5 rounded border border-slate-200 dark:border-white/10 select-all font-semibold">
+                {targetAddress}
+              </span>
+              <span className="text-slate-400 dark:text-gray-500">•</span>
+              <span className="text-slate-500 dark:text-gray-400">Status:</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium">No direct sweep to known exchange hot wallets detected</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+            <button
+              onClick={() => onInspectWallet(targetAddress)}
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-white font-bold text-xs transition border border-slate-200 dark:border-white/10 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              <Search className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <span>Inspect Leaf Node</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleCopy = () => {
     navigator.clipboard.writeText(targetAddress);

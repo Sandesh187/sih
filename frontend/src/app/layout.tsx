@@ -25,7 +25,7 @@ export default function RootLayout({
             <Suspense fallback={<div className="h-24 w-full bg-slate-100 dark:bg-slate-900 animate-pulse border-b border-slate-200 dark:border-slate-800" />}>
               <TopNavbar />
             </Suspense>
-            <main className="flex-1 w-full relative overflow-hidden flex flex-col">
+            <main className="flex-1 w-full relative overflow-y-auto overflow-x-hidden flex flex-col">
               {children}
             </main>
           </div>

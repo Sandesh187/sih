@@ -23,7 +23,7 @@ class EthereumClient:
         url = "https://api.etherscan.io/v2/api"
         async with self.etherscan_semaphore:
             try:
-                await asyncio.sleep(0.4) # Strict rate limiting for free keys
+                await asyncio.sleep(0.2) # Fast compliant rate limiting (5 req/sec)
                 response = await self.client.get(url, params=params, timeout=15.0)
                 response.raise_for_status()
                 data = response.json()
@@ -65,16 +65,9 @@ class EthereumClient:
         return normal + internal + tokens
 
     async def _fetch_paginated(self, params: Dict[str, Any]) -> List[Dict[str, Any]]:
-        records: List[Dict[str, Any]] = []
-        page = 1
-        while len(records) < settings.MAX_TRANSFERS_PER_ADDRESS:
-            data = await self._fetch_etherscan({**params, "page": page, "offset": settings.ETHERSCAN_PAGE_SIZE})
-            batch = data.get("result", []) if isinstance(data.get("result"), list) else []
-            records.extend(batch)
-            if len(batch) < settings.ETHERSCAN_PAGE_SIZE:
-                break
-            page += 1
-        return records[:settings.MAX_TRANSFERS_PER_ADDRESS]
+        # Fetch first batch of recent transactions (up to 100) for instant real-time tracing
+        data = await self._fetch_etherscan({**params, "page": 1, "offset": 100})
+        return data.get("result", []) if isinstance(data.get("result"), list) else []
 
     async def get_normal_transactions(self, address: str, start_block: int = 0, end_block: int = 99999999) -> List[Dict[str, Any]]:
         params = {
@@ -83,7 +76,7 @@ class EthereumClient:
             "address": address,
             "startblock": start_block,
             "endblock": end_block,
-            "sort": "asc"
+            "sort": "desc"
         }
         return await self._fetch_paginated(params)
 
@@ -94,7 +87,7 @@ class EthereumClient:
             "address": address,
             "startblock": 0,
             "endblock": 99999999,
-            "sort": "asc"
+            "sort": "desc"
         }
         return await self._fetch_paginated(params)
 
@@ -105,7 +98,7 @@ class EthereumClient:
             "address": address,
             "startblock": 0,
             "endblock": 99999999,
-            "sort": "asc"
+            "sort": "desc"
         }
         return await self._fetch_paginated(params)
 

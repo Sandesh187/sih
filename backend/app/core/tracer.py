@@ -46,8 +46,8 @@ class FundTracer:
       6. Confidence decay by hop (0.85× multiplier per hop from suspect)
     """
 
-    MAX_INTERMEDIATE_NODES = 25    # Optimized for fast real-time tracing (<10s)
-    MAX_OUTBOUND_PER_ADDRESS = 15  # Top 15 highest-value transfers per hop
+    MAX_INTERMEDIATE_NODES = 10    # Optimized for fast real-time tracing (<3s)
+    MAX_OUTBOUND_PER_ADDRESS = 10  # Top 10 highest-value transfers per hop
     RISK_THRESHOLD_FOR_INBOUND = 0.70  # Nodes above this get inbound scan
     HOP_DECAY_FACTOR = 0.85        # Risk contribution decay per hop
 
@@ -178,6 +178,8 @@ class FundTracer:
         found_vasp = False
 
         while pq and not found_vasp:
+            if len(visited) >= self.MAX_INTERMEDIATE_NODES:
+                break
             neg_priority, _, current_address, current_depth = heapq.heappop(pq)
 
             if current_address in visited or current_depth >= max_depth:
@@ -342,16 +344,15 @@ class FundTracer:
     # ------------------------------------------------------------------
     async def trace_funds(self, address: str, chain: str, max_depth: int = 10) -> TraceResult:
         """Trace outgoing fund flows to known VASP wallets using Best-First Search."""
-        address = address if chain.lower() in ["trx", "tron"] else address.lower()
+        norm_address = address if chain.lower() in ["trx", "tron"] else address.lower()
         trace_id = str(uuid.uuid4())
 
-        is_demo_target = address.lower() == "0x9d81f2ab72a38a7c29671f654b9d3753b708b761".lower()
-        G = await self.build_trace_graph(address, chain, max_depth) if not is_demo_target else nx.DiGraph()
-
-        # If canonical demo or no txs found on live RPC, return realistic forensic trace graph
-        if is_demo_target or G.number_of_edges() == 0:
+        is_demo_target = norm_address == "0x9d81f2ab72a38a7c29671f654b9d3753b708b761".lower()
+        
+        # If canonical demo target, return the pre-seeded investigation scenario
+        if is_demo_target:
             victim_addr = "0x742d35cc6634c0532925a3b844bc454e4438f44e"
-            suspect_addr = address if not is_demo_target else "0x9d81f2ab72a38a7c29671f654b9d3753b708b761"
+            suspect_addr = "0x9d81f2ab72a38a7c29671f654b9d3753b708b761"
             mule_addr = "0x52908400098527886E0F7030069857D2E4169EE8"
             candidate_addr = "0x21a31Ee1afC51d94C2eFcCAa2092aD1028285549"
             binance_hot = "0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be"
@@ -403,7 +404,7 @@ class FundTracer:
 
             graph_dict = {
                 "nodes": [
-                    {"data": {"id": victim_addr, "label": "Victim EOA", "type": "intermediate"}},
+                    {"data": {"id": victim_addr, "label": "Victim EOA", "type": "intermediate", "riskScore": 10}},
                     {"data": {"id": suspect_addr, "label": f"Suspect Root ({suspect_addr[:6]}...{suspect_addr[-4:]})", "type": "suspect", "riskScore": 88}},
                     {"data": {"id": mule_addr, "label": "Mule / Peel EOA", "type": "intermediate", "riskScore": 65}},
                     {"data": {"id": candidate_addr, "label": "Binance Deposit Candidate", "type": "exchange", "riskScore": 25}},
@@ -438,60 +439,139 @@ class FundTracer:
                 graph=graph_dict
             )
 
-        vasp, vasp_path = self.find_nearest_vasp(G, address)
+        # Real on-chain trace execution
+        G = await self.build_trace_graph(norm_address, chain, max_depth)
 
-        path_txs = []
+        # GNN Classification of suspect node
+        gnn_prediction = self.gnn_classifier.classify_wallet(norm_address, G)
+        risk_score = self._compute_decayed_risk(G, norm_address, gnn_prediction, max_depth) if G.number_of_edges() > 0 else 20.0
+
+        vasp, vasp_path = self.find_nearest_vasp(G, norm_address)
+
+        path_txs: List[Transaction] = []
         confidence = 0.0
-        vasp_attribution = None
+        vasp_attribution: Optional[VASPAttribution] = None
 
         if vasp and vasp_path:
             for i in range(len(vasp_path) - 1):
                 u = vasp_path[i]
                 v = vasp_path[i + 1]
-                edge_data = G.get_edge_data(u, v)
+                edge_data = G.get_edge_data(u, v) or {}
+
+                ts_val = edge_data.get("timestamp", 0)
+                tx_dt = datetime.fromtimestamp(ts_val) if ts_val > 0 else datetime.utcnow()
 
                 path_txs.append(Transaction(
                     tx_hash=edge_data.get("tx_hash", ""),
                     from_address=u,
                     to_address=v,
-                    value=edge_data.get("weight", 0),
-                    asset=edge_data.get("asset", "ETH" if chain.lower() in ["eth", "ethereum"] else "TRX"),
-                    timestamp=datetime.fromtimestamp(edge_data.get("timestamp", 0)),
+                    value=float(edge_data.get("weight", 0.0)),
+                    asset=str(edge_data.get("asset", "ETH" if chain.lower() in ["eth", "ethereum"] else "TRX")),
+                    timestamp=tx_dt,
                     block_number=0,
                     chain=chain
                 ))
 
             is_peel = self.detect_peel_chain(path_txs)
-
-            # FIX 6 — Confidence decays with hop distance
-            confidence = 0.9 if is_peel else 0.7
-            hop_penalty = len(vasp_path) * 0.05
-            confidence -= hop_penalty
-            confidence = max(0.1, min(confidence, 1.0))
+            confidence = 0.92 if is_peel else 0.80
+            hop_penalty = len(vasp_path) * 0.04
+            confidence = max(0.15, min(confidence - hop_penalty, 0.99))
 
             deposit_addr = vasp_path[-2] if len(vasp_path) > 1 else vasp_path[-1]
             vasp_attribution = VASPAttribution(
                 vasp_name=self.known_vasps[vasp],
                 deposit_address=deposit_addr,
                 hot_wallet=vasp,
-                confidence=confidence
+                confidence=round(confidence, 2)
             )
+        elif G.number_of_edges() > 0:
+            # Trace primary fund flow path along highest-value outbound edges
+            curr = norm_address
+            primary_path = [curr]
+            visited_in_path = {curr}
+            for _ in range(max_depth):
+                out_edges = list(G.out_edges(curr, data=True))
+                if not out_edges:
+                    break
+                best_edge = max(out_edges, key=lambda e: e[2].get("weight", 0.0))
+                nxt = best_edge[1]
+                if nxt in visited_in_path:
+                    break
+                primary_path.append(nxt)
+                visited_in_path.add(nxt)
+                curr = nxt
 
-        # GNN Classification
-        gnn_prediction = self.gnn_classifier.classify_wallet(address, G)
+            if len(primary_path) > 1:
+                for i in range(len(primary_path) - 1):
+                    u = primary_path[i]
+                    v = primary_path[i + 1]
+                    edge_data = G.get_edge_data(u, v) or {}
+                    ts_val = edge_data.get("timestamp", 0)
+                    tx_dt = datetime.fromtimestamp(ts_val) if ts_val > 0 else datetime.utcnow()
+                    path_txs.append(Transaction(
+                        tx_hash=edge_data.get("tx_hash", ""),
+                        from_address=u,
+                        to_address=v,
+                        value=float(edge_data.get("weight", 0.0)),
+                        asset=str(edge_data.get("asset", "ETH" if chain.lower() in ["eth", "ethereum"] else "TRX")),
+                        timestamp=tx_dt,
+                        block_number=0,
+                        chain=chain
+                    ))
 
-        # FIX 6 — Use hop-decayed composite risk instead of flat lookup
-        risk_score = self._compute_decayed_risk(G, address, gnn_prediction, max_depth)
+        # Build Cytoscape/Flow-compatible graph nodes and edges
+        nodes_list = []
+        for n in G.nodes():
+            n_lower = n.lower()
+            is_suspect = n_lower == norm_address.lower()
+            is_vasp = n in self.known_vasps
+            v_name = self.known_vasps.get(n)
+            
+            label = v_name if is_vasp else (f"Suspect ({n[:6]}...{n[-4:]})" if is_suspect else f"{n[:6]}...{n[-4:]}")
+            node_type = "suspect" if is_suspect else ("vasp" if is_vasp else "intermediate")
+            
+            nodes_list.append({
+                "data": {
+                    "id": n,
+                    "label": label,
+                    "type": node_type,
+                    "riskScore": 15 if is_vasp else (85 if is_suspect else 45)
+                }
+            })
 
-        # Build dict representation of the graph
+        edges_list = []
+        for u, v, d in G.edges(data=True):
+            edges_list.append({
+                "data": {
+                    "source": u,
+                    "target": v,
+                    "weight": float(d.get("weight", 0.0)),
+                    "amount": float(d.get("weight", 0.0)),
+                    "asset": str(d.get("asset", "ETH" if chain.lower() in ["eth", "ethereum"] else "TRX")),
+                    "currency": str(d.get("asset", "ETH" if chain.lower() in ["eth", "ethereum"] else "TRX")),
+                    "txHash": str(d.get("tx_hash", ""))
+                }
+            })
+
+        # Ensure source node is always in nodes list even if isolated
+        if not any(node["data"]["id"].lower() == norm_address.lower() for node in nodes_list):
+            nodes_list.append({
+                "data": {
+                    "id": norm_address,
+                    "label": f"Suspect ({norm_address[:6]}...{norm_address[-4:]})",
+                    "type": "suspect",
+                    "riskScore": 20
+                }
+            })
+
         graph_dict = {
-            "nodes": [{"data": {"id": n, "label": n}} for n in G.nodes()],
-            "edges": [{"data": {"source": u, "target": v, "weight": d.get("weight", 0), "asset": d.get("asset", chain)}} for u, v, d in G.edges(data=True)]
+            "nodes": nodes_list,
+            "edges": edges_list
         }
 
         return TraceResult(
             trace_id=trace_id,
-            suspect_address=address,
+            suspect_address=norm_address,
             chain=chain,
             path=path_txs,
             vasp=vasp_attribution,
