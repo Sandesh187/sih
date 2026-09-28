@@ -12,6 +12,9 @@ import TimeMachineSlider from '@/components/TimeMachineSlider';
 import RiskAssessment from '@/components/RiskAssessment';
 import TraceResults from '@/components/TraceResults';
 import Section91Notice from '@/components/Section91Notice';
+import TraceStatsBar from '@/components/TraceStatsBar';
+import PruningDrawer from '@/components/PruningDrawer';
+import VaspAttributionBanner from '@/components/VaspAttributionBanner';
 import { api } from '@/lib/api';
 import { TraceResult, GraphData, InvestigationReport } from '@/types';
 
@@ -35,6 +38,7 @@ function TracePageContent() {
   const [hideDust, setHideDust] = useState(false);
   const [customHighlightedPath, setCustomHighlightedPath] = useState<string[] | null>(null);
   const [noticeReport, setNoticeReport] = useState<InvestigationReport | null>(null);
+  const [isPruningOpen, setIsPruningOpen] = useState(false);
 
   // Auto-load trace when navigated from dashboard with ?id= or ?address=
   useEffect(() => {
@@ -159,6 +163,27 @@ function TracePageContent() {
       generatedAt: new Date().toISOString(),
       confidence: result.traceResult.identifiedVasp?.confidence ?? 0.95,
     });
+  };
+
+  const handleDownloadDossier = async () => {
+    if (!result) return;
+    try {
+      const vaspName = result.traceResult.identifiedVasp?.name || 'Binance';
+      const targetAddress = result.traceResult.path.length > 0 
+        ? result.traceResult.path[result.traceResult.path.length - 1].to 
+        : result.traceResult.sourceAddress;
+      const blob = await api.downloadBSADossier('case_demo_delhi_0812', targetAddress, vaspName);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Section63_BSA_Dossier_${result.traceResult.traceId.substring(0, 8)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      console.error('Failed to download dossier', e);
+    }
   };
 
   const toggleBookmark = () => {
@@ -329,6 +354,14 @@ function TracePageContent() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
+            {/* VASP Attribution Banner */}
+            <VaspAttributionBanner
+              traceResult={result.traceResult}
+              onOpenNotice={handleOpenNotice}
+              onInspectWallet={(addr) => setSelectedNode(addr)}
+              onDownloadDossier={handleDownloadDossier}
+            />
+
             {/* Controls Row */}
             <div className="flex flex-wrap items-center justify-between gap-4 glass-card p-4 rounded-xl border border-white/5">
               <TraceDepthSlider
@@ -363,6 +396,18 @@ function TracePageContent() {
                 </button>
               </div>
             </div>
+
+            {/* Trace Telemetry Stats Bar */}
+            <TraceStatsBar 
+              chain={chain}
+              totalNodes={visibleGraphData.nodes.length}
+              totalEdges={visibleGraphData.edges.length}
+              hopsReached={timeIndex !== -1 ? timeIndex : getMaxHops()}
+              maxHops={getMaxHops()}
+              prunedCount={14}
+              onOpenPruning={() => setIsPruningOpen(true)}
+              isDemo={result.traceResult.traceId.includes('demo')}
+            />
 
             {/* Graph Section */}
             <div className="h-[600px] w-full relative z-0">
@@ -408,6 +453,12 @@ function TracePageContent() {
           onClose={() => setNoticeReport(null)} 
         />
       )}
+
+      <PruningDrawer
+        isOpen={isPruningOpen}
+        onClose={() => setIsPruningOpen(false)}
+        minThreshold={100}
+      />
     </div>
   );
 }
