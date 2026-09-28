@@ -1,3 +1,59 @@
 {
-  "labels": []
+  "labels": [
+    {
+      "address": "0x28c6c06298d514db089934071355e22af1629fcb",
+      "name": "Binance 5",
+      "type": "exchange"
+    },
+    {
+      "address": "0xf977814e90da44bfa03b6295a0616a897441acec",
+      "name": "Binance 8",
+      "type": "exchange"
+    },
+    {
+      "address": "0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be",
+      "name": "Binance 14",
+      "type": "exchange"
+    },
+    {
+      "address": "0x71660c4005ba85c37ccec55d0c4493e66fe775d3",
+      "name": "Coinbase",
+      "type": "exchange"
+    },
+    {
+      "address": "0x5041ed759dd4afc3a72b8192c143f72f4724081a",
+      "name": "Kraken",
+      "type": "exchange"
+    },
+    {
+      "address": "0x1151314c646ce4e0efd76d1af4760ae66a9fe30f",
+      "name": "WazirX",
+      "type": "exchange"
+    },
+    {
+      "address": "0xf4b51b14b9ee30dc37ec970b50a486f37686e2a8",
+      "name": "CoinDCX",
+      "type": "exchange"
+    },
+    {
+      "address": "0x9045e5f0ba77f9a7d30e7d5372e71ee0d1091f01",
+      "name": "Bitbns",
+      "type": "exchange"
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "Burn Address",
+      "type": "unknown"
+    },
+    {
+      "address": "0xc8ac61230b48d3be6756b55df94e964c7f344d2c",
+      "name": "Binance: Hot Wallet",
+      "type": "exchange"
+    },
+    {
+      "address": "0xcafb10ee663f465f9d10588ac44ed20ed608c11e",
+      "name": "Tether: Treasury",
+      "type": "exchange"
+    }
+  ]
 }

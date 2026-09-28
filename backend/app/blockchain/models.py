@@ -54,6 +54,7 @@ class TraceResult(BaseModel):
     confidence_score: float
     risk_score: Optional[float] = None
     gnn_prediction: Optional[Dict[str, Any]] = None
+    graph: Optional[Dict[str, Any]] = None
 
 class RiskScore(BaseModel):
     address: str

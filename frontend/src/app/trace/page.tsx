@@ -35,17 +35,43 @@ function TracePageContent() {
 
   // Auto-load trace when navigated from dashboard with ?id= or ?address=
   useEffect(() => {
-    if ((traceIdFromUrl || addressFromUrl) && !result && !loading) {
-      const address = addressFromUrl || '0x742d35Cc6634C0532925a3b844Bc454e4438f44e';
+    if (traceIdFromUrl && !result && !loading) {
+      loadExistingTrace(traceIdFromUrl);
+    } else if (addressFromUrl && !result && !loading) {
+      const address = addressFromUrl;
       const selectedChain = chainFromUrl || 'ethereum';
       handleTrace(address, selectedChain);
     }
   }, [traceIdFromUrl, addressFromUrl]);
 
+  const loadExistingTrace = async (traceId: string) => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    setSelectedNode(null);
+    setTimeIndex(-1);
+    setHideDust(false);
+    
+    try {
+      const data = await api.getTraceResult(traceId);
+      setChain(data.traceResult.chain);
+      setResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load trace. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTrace = async (address: string, selectedChain: string, depth = traceDepth) => {
     // Basic validation
     if (selectedChain === 'ethereum' && !address.startsWith('0x')) {
       setError('Invalid Ethereum address format. Must start with 0x.');
+      return;
+    }
+    if (selectedChain === 'tron' && !address.startsWith('T')) {
+      setError('Invalid Tron address format. Tron addresses must start with T (Base58Check).');
       return;
     }
     
@@ -60,6 +86,7 @@ function TracePageContent() {
     try {
       const data = await api.traceWallet(address, selectedChain, depth);
       setResult(data);
+      window.history.replaceState(null, '', `/trace?id=${data.traceResult.traceId}&address=${address}&chain=${selectedChain}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to trace wallet. Please try again.');
       console.error(err);

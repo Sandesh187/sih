@@ -45,9 +45,9 @@ async def run_worker() -> None:
         while True:
             try:
                 raw_job = await redis.brpoplpush(TRACE_QUEUE_KEY, TRACE_PROCESSING_KEY, timeout=5)
-            except (TimeoutError, Exception) as e:
-                # redis.asyncio can raise TimeoutError on empty queues with blocking commands
-                if isinstance(e, TimeoutError) or "Timeout" in str(e):
+            except (TimeoutError, asyncio.CancelledError, Exception) as e:
+                # redis.asyncio can raise TimeoutError or CancelledError on empty queues with blocking commands
+                if isinstance(e, (TimeoutError, asyncio.CancelledError)) or "Timeout" in str(e):
                     continue
                 raise
                 

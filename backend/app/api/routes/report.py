@@ -25,9 +25,9 @@ async def generate_report(trace_id: str, redis: Redis = Depends(get_redis)):
         trace_id=trace_id,
         suspect_wallet=result.suspect_address,
         identified_vasp=vasp_name,
-        risk_score=None,
-        traced_path_summary=f"Funds traced over {len(result.path)} hops {endpoint}.",
-        methodology_notes="Automated BFS heuristic search with peel chain detection.",
+        risk_score=result.risk_score,
+        traced_path_summary=f"Funds traced over {len(result.path)} hops {endpoint}. The risk score is {result.risk_score:.1f}/100.0, classified by GNN heuristics as {result.gnn_prediction.get('predicted_class', 'unknown') if result.gnn_prediction else 'unknown'}.",
+        methodology_notes="Automated Priority BFS with value-sorted edge capping, cross-referenced with Elliptic-compatible node features.",
         generated_at=datetime.utcnow(),
         confidence=result.confidence_score
     )

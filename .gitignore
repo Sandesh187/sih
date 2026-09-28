@@ -1,14 +1,75 @@
+# Dependencies
 node_modules/
+frontend/node_modules/
+backend/venv/
+venv/
+env/
+ENV/
+
+# Next.js & Frontend builds
 .next/
+frontend/.next/
 dist/
 build/
+out/
+
+# Environment Variables & Secrets
 .env
-frontend/node_modules/
-frontend/.next/
-backend/venv/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+*.pem
+*.key
+config.yaml
+
+# Python & PyTorch
+__pycache__/
 backend/__pycache__/
 backend/app/__pycache__/
 **/__pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
 backend/models/*.pth
+*.pth
+*.pt
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/
+
+# Logs & Temporary files
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+scratch/
+tmp/
+temp/
+
+# Generated Reports & Deliverables
+backend/generated_reports/*.pdf
+*.pdf
+
+# Operating System & Editor Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# External Research & Competitor Reference Material
+*_cryptotrace*
+*cryptotracer*
+*online_avaible_on_YT*
+Crypto VASP Attribution System Research.txt

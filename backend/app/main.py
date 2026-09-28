@@ -38,10 +38,16 @@ async def verify_api_key(api_key: str = Depends(api_key_header)):
         )
     return api_key
 
+origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",")]
+if "*" in origins:
+    allow_credentials = False
+else:
+    allow_credentials = True
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",")],
-    allow_credentials=True,
+    allow_origins=origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )

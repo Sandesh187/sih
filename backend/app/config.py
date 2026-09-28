@@ -23,16 +23,9 @@ class Settings(BaseSettings):
     TRONGRID_RATE_LIMIT: int = 15
     TRONSCAN_PAGE_SIZE: int = 100
     
-    # Neo4j Config
-    NEO4J_URI: str = "bolt://localhost:7687"
-    NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = ""
-    
-    # Clickhouse Config
-    CLICKHOUSE_HOST: str = "localhost"
-    CLICKHOUSE_PORT: int = 8123
-    CLICKHOUSE_USER: str = "default"
-    CLICKHOUSE_PASSWORD: str = ""
+    # Database Config
+    # Removed Neo4j and Clickhouse to streamline SIH prototype deployment
+
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379"

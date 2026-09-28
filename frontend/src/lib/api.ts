@@ -2,7 +2,7 @@ import { GraphData, InvestigationReport, TraceResult } from '@/types';
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1').replace(/\/$/, '');
 const POLL_INTERVAL_MS = 1_000;
-const TRACE_TIMEOUT_MS = 45_000;
+const TRACE_TIMEOUT_MS = 120_000;
 
 type BackendTransaction = {
   tx_hash: string;
@@ -31,6 +31,7 @@ type BackendTraceResult = {
     confidence: number;
     explanation: string;
   };
+  graph?: BackendGraph;
 };
 
 type BackendGraph = {
@@ -167,16 +168,13 @@ export const api = {
       await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
       status = await request<TraceStatus>(`/trace/${submission.trace_id}`);
       if (Date.now() - startedAt > TRACE_TIMEOUT_MS) {
-        throw new Error('Tracing did not finish within 45 seconds. Try again later.');
+        throw new Error('Tracing did not finish within 120 seconds. Try again later.');
       }
     } while (isProcessing(status));
 
     const traceResult = toTraceResult(status);
-    const graph = await request<BackendGraph>(
-      `/graph/${encodeURIComponent(address)}?chain=${encodeURIComponent(chain)}&depth=${maxDepth}`,
-    );
-
-    return { traceResult, graphData: toGraphData(graph, traceResult) };
+    const backendGraph = status.graph || { nodes: [], edges: [] };
+    return { traceResult, graphData: toGraphData(backendGraph, traceResult) };
   },
 
   async getGraphData(address: string, chain: string, depth = 2): Promise<GraphData> {
@@ -192,6 +190,16 @@ export const api = {
   async getReport(traceId: string): Promise<InvestigationReport> {
     const report = await request<BackendInvestigationReport>(`/report/${encodeURIComponent(traceId)}`);
     return toInvestigationReport(report);
+  },
+
+  async getTraceResult(traceId: string): Promise<{ traceResult: TraceResult; graphData: GraphData }> {
+    const status = await request<TraceStatus>(`/trace/${encodeURIComponent(traceId)}`);
+    if (isProcessing(status)) {
+      throw new Error('Trace is still processing.');
+    }
+    const traceResult = toTraceResult(status);
+    const backendGraph = status.graph || { nodes: [], edges: [] };
+    return { traceResult, graphData: toGraphData(backendGraph, traceResult) };
   },
 
   async getRecentTraces(): Promise<any[]> {

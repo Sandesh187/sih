@@ -46,8 +46,8 @@ class FundTracer:
       6. Confidence decay by hop (0.85× multiplier per hop from suspect)
     """
 
-    MAX_INTERMEDIATE_NODES = 200   # Cap only for unknown/intermediate nodes
-    MAX_OUTBOUND_PER_ADDRESS = 100 # Top-N by value after sorting
+    MAX_INTERMEDIATE_NODES = 25    # Optimized for fast real-time tracing (<10s)
+    MAX_OUTBOUND_PER_ADDRESS = 15  # Top 15 highest-value transfers per hop
     RISK_THRESHOLD_FOR_INBOUND = 0.70  # Nodes above this get inbound scan
     HOP_DECAY_FACTOR = 0.85        # Risk contribution decay per hop
 
@@ -77,8 +77,8 @@ class FundTracer:
                 value = float(tx.get("value", 0)) / 10**int(tx.get("_decimals", 18))
                 timestamp = int(tx.get("timeStamp", 0))
             else:
-                from_addr = str(tx.get("ownerAddress") or "").lower()
-                to_addr = str(tx.get("toAddress") or "").lower()
+                from_addr = str(tx.get("ownerAddress") or "")
+                to_addr = str(tx.get("toAddress") or "")
                 value = float(tx.get("amount", 0)) / 10**int(tx.get("_decimals", 6))
                 timestamp = int(tx.get("timestamp", 0)) / 1000
 
@@ -162,7 +162,7 @@ class FundTracer:
         - Dust transactions filtered out (Fix 5)
         - Secondary inbound scan on high-risk nodes (Fix 2)
         """
-        source = address.lower()
+        source = address if chain.lower() in ["trx", "tron"] else address.lower()
         graph = nx.DiGraph()
         graph.add_node(source)
 
@@ -175,8 +175,9 @@ class FundTracer:
         visited: Set[str] = set()
         scheduled: Set[str] = {source}
         intermediate_count = 0  # Only counts non-VASP nodes
+        found_vasp = False
 
-        while pq:
+        while pq and not found_vasp:
             neg_priority, _, current_address, current_depth = heapq.heappop(pq)
 
             if current_address in visited or current_depth >= max_depth:
@@ -200,54 +201,48 @@ class FundTracer:
 
                 graph.add_edge(edge["from"], edge["to"], **edge)
 
+                # If we hit a known VASP, that is our terminal off-ramp! Stop expanding.
+                if is_vasp:
+                    found_vasp = True
+                    break
+
                 next_depth = current_depth + 1
                 if next_depth < max_depth and target not in scheduled:
-                    # FIX 3 — Assign priority based on forensic relevance
-                    # Higher value transfers and VASP destinations get explored first
+                    # FIX 3 — Priority: Higher value transfers get explored first
                     priority = edge["weight"]
-                    if is_vasp:
-                        priority += 1_000_000  # Always explore VASP connections
                     heapq.heappush(pq, (-priority, counter, target, next_depth))
                     counter += 1
                     scheduled.add(target)
 
         # ------------------------------------------------------------------
-        # FIX 2 — Secondary inbound scan on high-risk nodes
-        # Classic mixer pattern: funds go forward 10 hops, then the final
-        # wallet sends money BACK to a clean wallet near the source.
-        # We catch this by scanning inbound transfers on nodes that our GNN
-        # flags as high-risk (mixers, darknet, etc.)
+        # FIX 2 — Secondary inbound scan on high-risk nodes (only if no VASP found yet)
         # ------------------------------------------------------------------
-        high_risk_nodes = []
-        for node in list(graph.nodes()):
-            if node == source or node in self.known_vasps:
-                continue
-            # Quick heuristic: high out-degree + roughly equal in/out = mixer-like
-            out_deg = graph.out_degree(node)
-            in_deg = graph.in_degree(node)
-            if out_deg > 5 and in_deg > 0 and (out_deg / max(in_deg, 1)) < 3:
-                high_risk_nodes.append(node)
+        if not found_vasp:
+            high_risk_nodes = []
+            for node in list(graph.nodes()):
+                if node == source or node in self.known_vasps:
+                    continue
+                out_deg = graph.out_degree(node)
+                in_deg = graph.in_degree(node)
+                if out_deg > 5 and in_deg > 0 and (out_deg / max(in_deg, 1)) < 3:
+                    high_risk_nodes.append(node)
 
-        for hr_node in high_risk_nodes[:10]:  # Limit secondary scan to top 10
-            if hr_node in visited:
-                # We already have outbound; now fetch inbound too
-                transactions = await self.fetch_transactions(hr_node, chain)
-                inbound_edges: List[Dict[str, Any]] = []
-                for tx in transactions:
-                    edge = self.parse_transaction(tx, chain)
-                    if not edge or edge["to"] != hr_node:
-                        continue
-                    if self._is_dust(edge["weight"], chain, edge["from"]):
-                        continue
-                    inbound_edges.append(edge)
+            for hr_node in high_risk_nodes[:2]:  # Limit secondary scan to top 2
+                if hr_node in visited:
+                    transactions = await self.fetch_transactions(hr_node, chain)
+                    inbound_edges: List[Dict[str, Any]] = []
+                    for tx in transactions:
+                        edge = self.parse_transaction(tx, chain)
+                        if not edge or edge["to"] != hr_node:
+                            continue
+                        if self._is_dust(edge["weight"], chain, edge["from"]):
+                            continue
+                        inbound_edges.append(edge)
 
-                # Sort by value, take top 20 inbound
-                inbound_edges.sort(key=lambda e: e["weight"], reverse=True)
-                for edge in inbound_edges[:20]:
-                    if edge["from"] in graph:
-                        # Only add if the sender is already in our graph
-                        # (this catches the return-leg pattern)
-                        graph.add_edge(edge["from"], edge["to"], **edge)
+                    inbound_edges.sort(key=lambda e: e["weight"], reverse=True)
+                    for edge in inbound_edges[:10]:
+                        if edge["from"] in graph:
+                            graph.add_edge(edge["from"], edge["to"], **edge)
 
         # ------------------------------------------------------------------
         # Compute node features for GNN inference
@@ -347,7 +342,7 @@ class FundTracer:
     # ------------------------------------------------------------------
     async def trace_funds(self, address: str, chain: str, max_depth: int = 10) -> TraceResult:
         """Trace outgoing fund flows to known VASP wallets using Best-First Search."""
-        address = address.lower()
+        address = address if chain.lower() in ["trx", "tron"] else address.lower()
         trace_id = str(uuid.uuid4())
         G = await self.build_trace_graph(address, chain, max_depth)
 
@@ -406,6 +401,12 @@ class FundTracer:
         # FIX 6 — Use hop-decayed composite risk instead of flat lookup
         risk_score = self._compute_decayed_risk(G, address, gnn_prediction)
 
+        # Build dict representation of the graph
+        graph_dict = {
+            "nodes": [{"data": {"id": n, "label": n}} for n in G.nodes()],
+            "edges": [{"data": {"source": u, "target": v, "weight": d.get("weight", 0), "asset": d.get("asset", chain)}} for u, v, d in G.edges(data=True)]
+        }
+
         return TraceResult(
             trace_id=trace_id,
             suspect_address=address,
@@ -414,7 +415,8 @@ class FundTracer:
             vasp=vasp_attribution,
             confidence_score=confidence,
             risk_score=risk_score,
-            gnn_prediction=gnn_prediction
+            gnn_prediction=gnn_prediction,
+            graph=graph_dict
         )
 
     def find_nearest_vasp(self, G: nx.DiGraph, source: str) -> tuple[Optional[str], List[str]]:
