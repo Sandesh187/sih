@@ -199,7 +199,7 @@ export default function TopNavbar() {
       <div className="w-full border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/60 transition-colors">
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 overflow-x-auto">
           
-          {/* Main App Navigation Tabs */}
+          {/* Main App Navigation Tabs (Clean on left) */}
           <nav className="flex items-center space-x-1 py-1.5">
             {mainNavItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -227,20 +227,16 @@ export default function TopNavbar() {
             })}
           </nav>
 
-          {/* Trace Workspace View Tabs (Active when on /trace) */}
+          {/* Trace Workspace Views: Pushed to the right as an active segmented control pill */}
           {isTracePage && (
-            <div className="flex items-center gap-1.5 py-1.5 pl-3 border-l border-slate-200 dark:border-slate-800 shrink-0">
-              <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 hidden md:inline mr-1">
-                Trace Workspace:
-              </span>
-              
+            <div className="ml-auto flex items-center p-1 rounded-xl bg-slate-200/80 dark:bg-slate-900/90 border border-slate-300/80 dark:border-slate-800 shrink-0 shadow-inner">
               <button
                 onClick={() => handleSwitchTab('graph')}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                   currentTab === 'graph'
                     ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-800/80"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
                 )}
               >
                 <GitFork className="w-3.5 h-3.5" />
@@ -250,10 +246,10 @@ export default function TopNavbar() {
               <button
                 onClick={() => handleSwitchTab('attribution')}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                   currentTab === 'attribution'
                     ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-800/80"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
                 )}
               >
                 <Building2 className="w-3.5 h-3.5" />
@@ -263,10 +259,10 @@ export default function TopNavbar() {
               <button
                 onClick={() => handleSwitchTab('findings')}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                   currentTab === 'findings'
                     ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-800/80"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
                 )}
               >
                 <Activity className="w-3.5 h-3.5" />

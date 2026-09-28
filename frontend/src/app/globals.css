@@ -148,3 +148,17 @@ html.light ::-webkit-scrollbar-thumb {
 html.light ::-webkit-scrollbar-thumb:hover {
   background: rgba(37, 99, 235, 0.5);
 }
+
+/* Hide stray Next.js dev tools / bottom indicators */
+nextjs-portal,
+#__next-build-watcher,
+[data-nextjs-toast],
+div[data-nextjs-dev-tools-button],
+button[aria-label*="Next.js"],
+div[data-next-badge] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+

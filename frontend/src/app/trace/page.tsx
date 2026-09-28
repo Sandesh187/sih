@@ -15,9 +15,7 @@ import {
   Download, 
   ExternalLink,
   ShieldCheck,
-  Search,
-  Sparkles,
-  Layers
+  Search
 } from 'lucide-react';
 import FlowGraph from '@/components/FlowGraph';
 import TimelineView from '@/components/TimelineView';
@@ -87,13 +85,15 @@ function TracePageContent() {
     return () => window.removeEventListener('topbar-initiate-trace', handleTopTrace);
   }, [traceDepth]);
 
-  // Auto-load trace when navigated with ?id= or ?address=
+  // Auto-load trace when navigated with ?id= or ?address=, or auto-load verified demo case immediately
   useEffect(() => {
     if (traceIdFromUrl && !result && !loading) {
       loadExistingTrace(traceIdFromUrl);
     } else if (addressFromUrl && !result && !loading) {
       const selectedChain = chainFromUrl || 'ethereum';
       handleTrace(addressFromUrl, selectedChain);
+    } else if (!traceIdFromUrl && !addressFromUrl && !result && !loading) {
+      handleTrace('0x9d81f2ab72a38a7c29671f654b9d3753b708b761', 'ethereum');
     }
   }, [traceIdFromUrl, addressFromUrl]);
 
@@ -335,7 +335,7 @@ function TracePageContent() {
 
       {/* Loading State */}
       {loading && !result && (
-        <div className="flex-1 min-h-[500px] flex flex-col items-center justify-center p-8 space-y-4">
+        <div className="w-full h-[calc(100vh-112px)] flex flex-col items-center justify-center p-8 space-y-4">
           <div className="w-12 h-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
           <div className="text-center">
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Tracing Transaction Graph...</h3>
@@ -344,100 +344,16 @@ function TracePageContent() {
         </div>
       )}
 
-      {/* Empty State / Initial Hero */}
-      {!result && !loading && (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-2xl mx-auto my-auto space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm">
-            <Search className="w-8 h-8 text-blue-600 dark:text-blue-500" />
-          </div>
-          <div>
-            <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight">
-              Cryptocurrency Forensic Tracing
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 leading-relaxed">
-              Enter an Ethereum or Tron suspect wallet address in the top search bar to initiate autonomous multi-hop fund tracing, deposit sweep clustering, and terminal VASP attribution.
-            </p>
-          </div>
-
-          <div className="pt-2">
-            <button
-              onClick={() => handleTrace('0x9d81f2ab72a38a7c29671f654b9d3753b708b761', 'ethereum')}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-md transition-all cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Load Verified Demo Case (FIR-2026-DEL-CY-0812)</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Active Trace Workspace: Tabbed Interface */}
+      {/* Active Trace Workspace */}
       {result && !loading && (
         <div className="flex-1 flex flex-col w-full relative">
           
-          {/* In-Page Workspace Tab Switcher */}
-          <div className="w-full bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-2 flex items-center justify-between gap-4 shrink-0 transition-colors">
-            
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <button
-                onClick={() => handleTabChange('graph')}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
-                  activeTab === 'graph'
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-                )}
-              >
-                <GitFork className="w-3.5 h-3.5" />
-                <span>Trace Graph</span>
-              </button>
-
-              <button
-                onClick={() => handleTabChange('attribution')}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
-                  activeTab === 'attribution'
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-                )}
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                <span>VASP Attribution</span>
-              </button>
-
-              <button
-                onClick={() => handleTabChange('findings')}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
-                  activeTab === 'findings'
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-                )}
-              >
-                <Activity className="w-3.5 h-3.5" />
-                <span>Forensic Findings</span>
-              </button>
-            </div>
-
-            {/* Quick Summary Badge on Top Right of Tabs */}
-            <div className="hidden sm:flex items-center gap-3 text-xs font-mono">
-              <span className="text-slate-500 dark:text-slate-400">
-                Target: <strong className="text-blue-600 dark:text-blue-400">{result.traceResult.sourceAddress.slice(0, 8)}...{result.traceResult.sourceAddress.slice(-6)}</strong>
-              </span>
-              <span className="text-slate-400">•</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                Terminal: {result.traceResult.identifiedVasp?.name || 'VASP Identified'}
-              </span>
-            </div>
-
-          </div>
-
           {/* TAB 1: TRACE GRAPH (Canvas Only + Floating Bottom HUD) */}
           {activeTab === 'graph' && (
-            <div className="relative w-full h-[calc(100vh-140px)] min-h-[580px] overflow-hidden bg-slate-50 dark:bg-slate-950 flex-1">
+            <div className="relative w-full h-[calc(100vh-112px)] overflow-hidden bg-slate-50 dark:bg-slate-950 flex-1">
               
               {/* Top-Left Telemetry Floating Chip */}
-              <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono font-semibold text-slate-700 dark:text-slate-300 shadow-md">
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono font-semibold text-slate-700 dark:text-slate-300 shadow-md">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>{visibleGraphData.nodes.length} Nodes</span>
                 <span className="text-slate-400">•</span>
@@ -445,6 +361,19 @@ function TracePageContent() {
                 <span className="text-slate-400">•</span>
                 <span className="text-blue-600 dark:text-blue-400 uppercase">{chain}</span>
               </div>
+
+              {/* Top-Right Target & Terminal VASP Floating Chip */}
+              {result?.traceResult && (
+                <div className="absolute top-4 right-4 z-20 hidden md:flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono shadow-md">
+                  <span className="text-slate-500 dark:text-slate-400">
+                    Target: <strong className="text-blue-600 dark:text-blue-400">{result.traceResult.sourceAddress.slice(0, 6)}...{result.traceResult.sourceAddress.slice(-4)}</strong>
+                  </span>
+                  <span className="text-slate-400">•</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                    Terminal: {result.traceResult.identifiedVasp?.name || 'VASP Identified'}
+                  </span>
+                </div>
+              )}
 
               {/* Topology Canvas */}
               <FlowGraph 
