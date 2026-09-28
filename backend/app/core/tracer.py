@@ -282,7 +282,7 @@ class FundTracer:
     # ------------------------------------------------------------------
     # FIX 6 — Confidence decay by hop
     # ------------------------------------------------------------------
-    def _compute_decayed_risk(self, graph: nx.DiGraph, source: str, gnn_prediction: Dict) -> float:
+    def _compute_decayed_risk(self, graph: nx.DiGraph, source: str, gnn_prediction: Dict, max_depth: int = 10) -> float:
         """
         Compute a composite risk score where each node's contribution decays
         by HOP_DECAY_FACTOR for every hop away from the suspect.
@@ -309,7 +309,7 @@ class FundTracer:
         for node in graph.nodes():
             if node == source:
                 continue
-            hops = hop_distances.get(node, max_depth if 'max_depth' in dir() else 10)
+            hops = hop_distances.get(node, max_depth)
             decay = self.HOP_DECAY_FACTOR ** hops
 
             # Determine node risk from graph topology heuristics
@@ -399,7 +399,7 @@ class FundTracer:
         gnn_prediction = self.gnn_classifier.classify_wallet(address, G)
 
         # FIX 6 — Use hop-decayed composite risk instead of flat lookup
-        risk_score = self._compute_decayed_risk(G, address, gnn_prediction)
+        risk_score = self._compute_decayed_risk(G, address, gnn_prediction, max_depth)
 
         # Build dict representation of the graph
         graph_dict = {

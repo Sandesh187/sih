@@ -1,0 +1,36 @@
+West Trace is a platform prototype designed for the Smart India Hackathon (SIH) 2026 to automate the attribution of unknown cryptocurrency wallets to their nearest Virtual Asset Service Providers (VASPs).
+
+Key features of the platform include:
+
+Fund Flow Visualization: The system builds a graph connecting wallets in the precise order that funds moved (0:46-0:51).
+Automated Attribution: It checks destination wallets against known service labels to identify supported deposit endpoints (0:53-0:59).
+Evidence Analysis: Clicking on nodes provides specific evidence for labels. It clearly highlights unresolved boundaries, such as cross-chain hops that cannot yet be confirmed (0:36-0:40, 1:15-1:20).
+Case Reporting: The tool assembles findings into a comprehensive evidence report (1:04-1:06) that is ready for officer review.
+Data Export: Every case can be exported in PDF or JSON format for further documentation
+Crypto-Tracer is a specialized blockchain investigation platform designed to assist investigators in tracking illicit cryptocurrency movements. Below are the key features highlighted in the video:
+
+Transaction Graph Visualization (0:22 - 0:46): The platform generates an interactive visual map where nodes represent individual wallets and connections represent fund transfers. This helps investigators track money across multiple hops rather than looking at isolated transaction records.
+Detailed Wallet Profiling (0:48 - 1:01): By selecting any specific wallet in the graph, users can view associated metadata and analyze the wallet's specific role and impact within the overall transaction flow.
+VASP Attribution Analysis (1:02 - 1:28): The platform identifies potential VASP (Virtual Asset Service Provider) or exchange endpoints. It provides an explainable confidence score for these findings, detailing the specific behavioral and attribution signals that led to the result rather than acting as a "black box."
+Evidence Vault (1:42 - 1:48): This feature serves as a secure repository to preserve all forensic observations and supporting data gathered during the investigation.
+Forensic Reporting (1:49 - 1:55): The system automates the creation of structured investigative drafts, organizing findings into formal documentation suitable for lawful follow-up and legal purposes.
+
+ChainTrace is an automated cryptocurrency investigation tool designed to assist investigators in tracking fund movements and performing VASP (Virtual Asset Service Provider) attribution. Its key features include:
+
+Automated Fund Tracking: Investigators input a wallet address to visualize transaction paths as a graph, moving hop-by-hop rather than manually checking every transaction (0:08 - 0:29).
+Detailed Node Inspection: Each node (wallet or entity) provides specific details, including the Ethereum address, hop step, and category of the entity (0:31 - 0:41).
+Risk Analysis Engine: The system automatically flags suspicious activity, such as significant transfer volumes (e.g., over 10 Ethereum), and adds points to a risk score (0:44 - 0:52, 1:23 - 1:36).
+Evidence Reporting: It can generate structured PDF legal notices and evidence reports, which include case identifiers, executive summaries, confidence factors, and forensic risk flags (0:55 - 1:22).
+Configurable Investigation: Investigators can control the maximum number of hops, allowing them to balance deep tracing with bounded, manageable investigations (1:47 - 1:53).
+Multi-Branch & Peel Chain Analysis: The tool accounts for complex transaction structures like peel chains to provide better context for fund flows (1:40 - 1:46).
+Historical Case Management: All investigation history is saved, allowing users to revisit previous cases and leverage a growing database of verified non-exchange wallet addresses (2:06 - 2:32).
+
+The ChainTrace prototype, part of the CHAINSahyog solution, is a centralized platform designed to assist law enforcement in cryptocurrency investigations. Key features include:
+
+Dashboard & Case Management: A unified workspace where investigators can create, manage, and monitor individual cases (3:12-3:40).
+Wallet Tracing: Automatically tracks fund flows across multiple blockchain networks (such as Bitcoin, Ethereum, and others) to identify movement stages without manual effort (0:20-0:30, 3:45-4:10).
+Visual Transaction Graph: Organizes blockchain activity into a connected view to help investigators visualize and understand complex fund movement paths (0:33-0:37, 4:10-4:30).
+VASP Attribution: Uses intelligence APIs and clustering techniques to identify and attribute Virtual Asset Service Providers (VASPs) connected to the suspect's funds, complete with a confidence score (0:47-1:07, 4:31-4:50).
+Risk Analysis & Typologies: Identifies suspicious patterns—such as interactions with mixers, bridges, or DeFi services—to prioritize high-risk investigation areas (1:39-1:51, 4:53-5:05).
+Automated Reporting: Generates structured reports containing relevant transaction data, timestamps, and evidence, and assists in rooting requests to the identified VASPs (1:52-2:12, 5:12-5:20).
+Audit Logs: Maintains secure logs of all platform activities to ensure transparency and accountability (5:20-5:32)

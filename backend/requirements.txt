@@ -12,7 +12,7 @@ scikit-learn
 torch
 torch-geometric
 redis
-neo4j
-clickhouse-connect
 python-multipart
 jinja2
+reportlab
+Pillow

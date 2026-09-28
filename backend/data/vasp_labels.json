@@ -2,58 +2,111 @@
   "labels": [
     {
       "address": "0x28c6c06298d514db089934071355e22af1629fcb",
-      "name": "Binance 5",
-      "type": "exchange"
-    },
-    {
-      "address": "0xf977814e90da44bfa03b6295a0616a897441acec",
-      "name": "Binance 8",
-      "type": "exchange"
+      "vasp_name": "Binance: Hot Wallet 5",
+      "name": "Binance: Hot Wallet 5",
+      "chain": "ethereum",
+      "type": "exchange",
+      "source_url": "https://etherscan.io/accounts/label/binance",
+      "verified_at": "2026-01-15"
     },
     {
       "address": "0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be",
-      "name": "Binance 14",
-      "type": "exchange"
+      "vasp_name": "Binance: Hot Wallet 14",
+      "name": "Binance: Hot Wallet 14",
+      "chain": "ethereum",
+      "type": "exchange",
+      "source_url": "https://etherscan.io/accounts/label/binance",
+      "verified_at": "2026-01-15"
+    },
+    {
+      "address": "0xf977814e90da44bfa03b6295a0616a897441acec",
+      "vasp_name": "Binance: Hot Wallet 8",
+      "name": "Binance: Hot Wallet 8",
+      "chain": "ethereum",
+      "type": "exchange",
+      "source_url": "https://etherscan.io/accounts/label/binance",
+      "verified_at": "2026-01-15"
     },
     {
       "address": "0x71660c4005ba85c37ccec55d0c4493e66fe775d3",
-      "name": "Coinbase",
-      "type": "exchange"
+      "vasp_name": "Coinbase: Hot Wallet",
+      "name": "Coinbase: Hot Wallet",
+      "chain": "ethereum",
+      "type": "exchange",
+      "source_url": "https://etherscan.io/accounts/label/coinbase",
+      "verified_at": "2026-01-15"
     },
     {
       "address": "0x5041ed759dd4afc3a72b8192c143f72f4724081a",
-      "name": "Kraken",
-      "type": "exchange"
+      "vasp_name": "Kraken: Hot Wallet",
+      "name": "Kraken: Hot Wallet",
+      "chain": "ethereum",
+      "type": "exchange",
+      "source_url": "https://etherscan.io/accounts/label/kraken",
+      "verified_at": "2026-01-15"
     },
     {
       "address": "0x1151314c646ce4e0efd76d1af4760ae66a9fe30f",
-      "name": "WazirX",
-      "type": "exchange"
+      "vasp_name": "WazirX: Hot Wallet",
+      "name": "WazirX: Hot Wallet",
+      "chain": "ethereum",
+      "type": "exchange",
+      "source_url": "https://etherscan.io/accounts/label/wazirx",
+      "verified_at": "2026-01-15"
     },
     {
       "address": "0xf4b51b14b9ee30dc37ec970b50a486f37686e2a8",
-      "name": "CoinDCX",
-      "type": "exchange"
+      "vasp_name": "CoinDCX: Treasury Hot Wallet",
+      "name": "CoinDCX: Treasury Hot Wallet",
+      "chain": "ethereum",
+      "type": "exchange",
+      "source_url": "https://etherscan.io/accounts/label/coindcx",
+      "verified_at": "2026-01-15"
     },
     {
       "address": "0x9045e5f0ba77f9a7d30e7d5372e71ee0d1091f01",
-      "name": "Bitbns",
-      "type": "exchange"
-    },
-    {
-      "address": "0x0000000000000000000000000000000000000000",
-      "name": "Burn Address",
-      "type": "unknown"
+      "vasp_name": "Bitbns: Hot Wallet",
+      "name": "Bitbns: Hot Wallet",
+      "chain": "ethereum",
+      "type": "exchange",
+      "source_url": "https://etherscan.io/accounts/label/bitbns",
+      "verified_at": "2026-01-15"
     },
     {
       "address": "0xc8ac61230b48d3be6756b55df94e964c7f344d2c",
-      "name": "Binance: Hot Wallet",
-      "type": "exchange"
+      "vasp_name": "Binance: Hot Wallet 6",
+      "name": "Binance: Hot Wallet 6",
+      "chain": "ethereum",
+      "type": "exchange",
+      "source_url": "https://etherscan.io/accounts/label/binance",
+      "verified_at": "2026-01-15"
     },
     {
       "address": "0xcafb10ee663f465f9d10588ac44ed20ed608c11e",
+      "vasp_name": "Tether: Treasury",
       "name": "Tether: Treasury",
-      "type": "exchange"
+      "chain": "ethereum",
+      "type": "exchange",
+      "source_url": "https://etherscan.io/accounts/label/tether",
+      "verified_at": "2026-01-15"
+    },
+    {
+      "address": "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
+      "vasp_name": "Tron Foundation Hot Wallet",
+      "name": "Tron Foundation Hot Wallet",
+      "chain": "tron",
+      "type": "exchange",
+      "source_url": "https://tronscan.org",
+      "verified_at": "2026-01-15"
+    },
+    {
+      "address": "TKHuVq1oKVruCGL41nvWA7JHQU88172911",
+      "vasp_name": "Binance Tron Cold Wallet",
+      "name": "Binance Tron Cold Wallet",
+      "chain": "tron",
+      "type": "exchange",
+      "source_url": "https://tronscan.org",
+      "verified_at": "2026-01-15"
     }
   ]
 }
